@@ -38,13 +38,7 @@ async def get_db():
 async def init_db():
     """Initialize database tables"""
     async with engine.begin() as conn:
-        # Only create pgvector extension for PostgreSQL databases
-        if "postgresql" in settings.database_url:
-            try:
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            except Exception:
-                # Ignore if extension creation fails (e.g., no pgvector installed)
-                pass
-        
+        # Create pgvector extension
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         # Create tables
         await conn.run_sync(Base.metadata.create_all)

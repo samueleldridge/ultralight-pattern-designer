@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from langgraph.checkpoint.aiosqlite import AsyncSqliteSaver
 from app.agent.state import AgentState
 from app.agent.nodes.classify import classify_intent_node, router
 from app.agent.nodes.context import fetch_context_node

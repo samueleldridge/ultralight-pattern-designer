@@ -1,70 +1,47 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Sidebar } from '@/components/layout/Sidebar'
-import { Header } from '@/components/layout/Header'
+import { ChatPanel } from '@/components/chat/ChatPanel'
 import { DashboardCanvas } from '@/components/dashboard/DashboardCanvas'
-import { ChatInterface } from '@/components/chat/ChatInterface'
-
-interface View {
-  id: string
-  title: string
-  query: string
-  type: 'line' | 'bar' | 'table' | 'metric' | 'pie'
-  data: any[]
-  lastUpdated: Date
-  isLoading?: boolean
-}
+import { SuggestionsPanel } from '@/components/suggestions/SuggestionsPanel'
 
 export default function Home() {
-  const [views, setViews] = useState<View[]>([])
+  const [views, setViews] = useState<any[]>([])
 
-  const handleAddView = (viewData: any) => {
-    const newView: View = {
-      id: Date.now().toString(),
-      title: viewData.title || 'New View',
-      query: viewData.query || '',
-      type: viewData.type || 'line',
-      data: viewData.data || [],
-      lastUpdated: new Date()
-    }
-    setViews(prev => [...prev, newView])
-  }
-
-  const handleRemoveView = (id: string) => {
-    setViews(prev => prev.filter(v => v.id !== id))
-  }
-
-  const handleRefreshView = (id: string) => {
-    setViews(prev => prev.map(v => 
-      v.id === id ? { ...v, isLoading: true } : v
-    ))
-    // Simulate refresh
-    setTimeout(() => {
-      setViews(prev => prev.map(v => 
-        v.id === id ? { ...v, isLoading: false, lastUpdated: new Date() } : v
-      ))
-    }, 1500)
+  const handleAddView = (view: any) => {
+    setViews([...views, view])
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      <Sidebar />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header />
-        
-        <main className="flex-1 overflow-auto">
-          <DashboardCanvas 
-            views={views} 
-            onRemoveView={handleRemoveView}
-            onRefreshView={handleRefreshView}
-          />
-        </main>
+    <main className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-semibold">AI Analytics</h1>
+          <span className="text-sm text-gray-500">Dashboard: Sales Overview</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            + Add View
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex h-[calc(100vh-64px)]">
+        {/* Sidebar - Suggestions */}
+        <aside className="w-80 bg-white border-r overflow-y-auto">
+          <SuggestionsPanel />
+        </aside>
+
+        {/* Dashboard Canvas */}
+        <div className="flex-1 overflow-auto p-6">
+          <DashboardCanvas views={views} />
+        </div>
       </div>
 
-      <ChatInterface onAddView={handleAddView} />
-    </div>
+      {/* Chat Panel */}
+      <ChatPanel onAddView={handleAddView} />
+    </main>
   )
 }

@@ -42,9 +42,9 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 60
     
     # =============================================================================
-    # DATABASE SETTINGS (SQLite by default for easy startup)
+    # DATABASE SETTINGS (Supabase)
     # =============================================================================
-    database_url: str = "sqlite+aiosqlite:///./ai_analytics.db"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/aianalytics"
     direct_database_url: Optional[str] = None
     db_pool_size: int = 10
     db_max_overflow: int = 20
@@ -153,11 +153,6 @@ class Settings(BaseSettings):
                 if len(creds) > 2:
                     return f"{creds[0]}:****@{parts[1]}"
         return self.database_url or "not-set"
-    
-    @property
-    def embedding_model(self) -> str:
-        """Alias for openai_embedding_model for backward compatibility"""
-        return self.openai_embedding_model
 
 
 @lru_cache()

@@ -10,10 +10,9 @@ interface View {
   id: string
   title: string
   query: string
-  type: 'line' | 'bar' | 'table' | 'metric' | 'pie'
+  type: 'line' | 'bar' | 'table' | 'metric'
   data: any[]
   lastUpdated: Date
-  isLoading?: boolean
 }
 
 export default function Dashboard() {
@@ -35,19 +34,8 @@ export default function Dashboard() {
     setViews(prev => prev.filter(v => v.id !== id))
   }
 
-  const handleRefreshView = (id: string) => {
-    setViews(prev => prev.map(v => 
-      v.id === id ? { ...v, isLoading: true } : v
-    ))
-    setTimeout(() => {
-      setViews(prev => prev.map(v => 
-        v.id === id ? { ...v, isLoading: false, lastUpdated: new Date() } : v
-      ))
-    }, 1500)
-  }
-
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background">
       <Sidebar />
       
       <div className="flex-1 flex flex-col min-w-0">
@@ -57,7 +45,6 @@ export default function Dashboard() {
           <DashboardCanvas 
             views={views} 
             onRemoveView={handleRemoveView}
-            onRefreshView={handleRefreshView}
           />
         </main>
       </div>

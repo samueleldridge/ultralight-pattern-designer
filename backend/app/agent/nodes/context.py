@@ -9,8 +9,8 @@ from app.models import QuestionHistory
 
 settings = get_settings()
 embeddings = OpenAIEmbeddings(
-    model=settings.openai_embedding_model,
-    api_key=settings.openai_api_key or "sk-test"
+    model=settings.embedding_model,
+    api_key=settings.openai_api_key
 )
 
 

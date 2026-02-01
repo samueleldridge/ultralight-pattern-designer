@@ -42,9 +42,9 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 60
     
     # =============================================================================
-    # DATABASE SETTINGS (Supabase)
+    # DATABASE SETTINGS (SQLite by default for easy startup)
     # =============================================================================
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/aianalytics"
+    database_url: str = "sqlite+aiosqlite:///./ai_analytics.db"
     direct_database_url: Optional[str] = None
     db_pool_size: int = 10
     db_max_overflow: int = 20

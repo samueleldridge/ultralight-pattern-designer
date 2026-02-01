@@ -153,6 +153,11 @@ class Settings(BaseSettings):
                 if len(creds) > 2:
                     return f"{creds[0]}:****@{parts[1]}"
         return self.database_url or "not-set"
+    
+    @property
+    def embedding_model(self) -> str:
+        """Alias for openai_embedding_model for backward compatibility"""
+        return self.openai_embedding_model
 
 
 @lru_cache()

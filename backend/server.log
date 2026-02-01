@@ -1,0 +1,199 @@
+/Users/sam-bot/.openclaw/workspace/ai-analytics-platform/backend/venv/lib/python3.14/site-packages/langchain_core/_api/deprecation.py:26: UserWarning: Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.
+  from pydantic.v1.fields import FieldInfo as FieldInfoV1
+2026-02-01 09:05:59,745 - app.main - INFO - [main.py:32] - ==================================================
+2026-02-01 09:05:59,745 - app.main - INFO - [main.py:33] - Starting AI Analytics Platform API
+2026-02-01 09:05:59,746 - app.main - INFO - [main.py:34] - Python version: 3.14.2 (v3.14.2:df793163d58, Dec  5 2025, 12:18:06) [Clang 16.0.0 (clang-1600.0.26.6)]
+2026-02-01 09:05:59,746 - app.main - INFO - [main.py:35] - Environment: development
+2026-02-01 09:05:59,746 - app.main - INFO - [main.py:36] - ==================================================
+2026-02-01 09:05:59,746 - app.main - INFO - [main.py:81] - CORS allowed origins: ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001']
+2026-02-01 09:05:59,746 - app.main - INFO - [main.py:176] - ✓ Registered router: /api
+2026-02-01 09:05:59,747 - app.main - INFO - [main.py:176] - ✓ Registered router: /api/dashboards
+2026-02-01 09:05:59,749 - app.main - INFO - [main.py:176] - ✓ Registered router: /api/suggestions
+2026-02-01 09:05:59,749 - app.main - INFO - [main.py:176] - ✓ Registered router: /api/connections
+2026-02-01 09:05:59,750 - app.main - INFO - [main.py:176] - ✓ Registered router: /api/intelligence
+INFO:     Started server process [39127]
+INFO:     Waiting for application startup.
+2026-02-01 09:05:59,753 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:05:59,753 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:05:59,753 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("documents")
+2026-02-01 09:05:59,753 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("documents")
+2026-02-01 09:05:59,753 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,753 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,754 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("document_chunks")
+2026-02-01 09:05:59,754 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("document_chunks")
+2026-02-01 09:05:59,754 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,754 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,754 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("tenants")
+2026-02-01 09:05:59,754 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("tenants")
+2026-02-01 09:05:59,754 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,754 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,755 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("users")
+2026-02-01 09:05:59,755 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("users")
+2026-02-01 09:05:59,755 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,755 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,755 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("question_history")
+2026-02-01 09:05:59,755 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("question_history")
+2026-02-01 09:05:59,755 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,755 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,756 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("user_profiles")
+2026-02-01 09:05:59,756 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("user_profiles")
+2026-02-01 09:05:59,756 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,756 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,756 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("database_connections")
+2026-02-01 09:05:59,756 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("database_connections")
+2026-02-01 09:05:59,756 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,756 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("dashboards")
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("dashboards")
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("dashboard_views")
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("dashboard_views")
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("proactive_insights")
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - PRAGMA main.table_info("proactive_insights")
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [raw sql] ()
+2026-02-01 09:05:59,757 INFO sqlalchemy.engine.Engine COMMIT
+2026-02-01 09:05:59,757 - sqlalchemy.engine.Engine - INFO - [base.py:2716] - COMMIT
+2026-02-01 09:05:59,758 - app.main - INFO - [main.py:45] - ✓ Database initialized successfully
+2026-02-01 09:05:59,758 - app.main - INFO - [main.py:50] - ✓ Application startup complete
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2026-02-01 09:06:01,493 - app.main - INFO - [main.py:102] - [403721cf] GET /health
+2026-02-01 09:06:01,495 - app.main - INFO - [main.py:107] - [403721cf] Response: 200
+INFO:     127.0.0.1:57230 - "GET /health HTTP/1.1" 200 OK
+2026-02-01 09:06:03,971 - app.main - INFO - [main.py:102] - [5647095b] GET /api/intelligence/suggestions
+2026-02-01 09:06:03,998 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:03,998 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:04,001 INFO sqlalchemy.engine.Engine SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? AND question_history.created_at >= ? ORDER BY question_history.created_at
+2026-02-01 09:06:04,001 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? AND question_history.created_at >= ? ORDER BY question_history.created_at
+2026-02-01 09:06:04,001 INFO sqlalchemy.engine.Engine [generated in 0.00010s] ('demo', 'demo', '2026-01-02 17:06:03.997515')
+2026-02-01 09:06:04,001 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [generated in 0.00010s] ('demo', 'demo', '2026-01-02 17:06:03.997515')
+2026-02-01 09:06:04,002 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:04,002 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:04,003 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:04,003 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:04,003 INFO sqlalchemy.engine.Engine SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? ORDER BY question_history.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:04,003 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? ORDER BY question_history.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:04,003 INFO sqlalchemy.engine.Engine [generated in 0.00009s] ('demo', 'demo', 1, 0)
+2026-02-01 09:06:04,003 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [generated in 0.00009s] ('demo', 'demo', 1, 0)
+2026-02-01 09:06:04,004 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:04,004 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:04,005 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:04,005 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:04,005 INFO sqlalchemy.engine.Engine SELECT question_history.question_text, count(question_history.id) AS count 
+FROM question_history 
+WHERE question_history.tenant_id = ? GROUP BY question_history.question_text ORDER BY count DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:04,005 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT question_history.question_text, count(question_history.id) AS count 
+FROM question_history 
+WHERE question_history.tenant_id = ? GROUP BY question_history.question_text ORDER BY count DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:04,005 INFO sqlalchemy.engine.Engine [generated in 0.00007s] ('demo', 5, 0)
+2026-02-01 09:06:04,005 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [generated in 0.00007s] ('demo', 5, 0)
+2026-02-01 09:06:04,006 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:04,006 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:04,006 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:04,006 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:04,007 INFO sqlalchemy.engine.Engine SELECT proactive_insights.id, proactive_insights.tenant_id, proactive_insights.user_id, proactive_insights.insight_type, proactive_insights.priority, proactive_insights.title, proactive_insights.description, proactive_insights.suggested_query, proactive_insights.action_type, proactive_insights.data_context, proactive_insights.related_metrics, proactive_insights.status, proactive_insights.delivered_at, proactive_insights.dismissed_at, proactive_insights.was_helpful, proactive_insights.feedback_text, proactive_insights.created_at, proactive_insights.expires_at 
+FROM proactive_insights 
+WHERE proactive_insights.user_id = ? AND proactive_insights.status = ? AND proactive_insights.expires_at > ? ORDER BY proactive_insights.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:04,007 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT proactive_insights.id, proactive_insights.tenant_id, proactive_insights.user_id, proactive_insights.insight_type, proactive_insights.priority, proactive_insights.title, proactive_insights.description, proactive_insights.suggested_query, proactive_insights.action_type, proactive_insights.data_context, proactive_insights.related_metrics, proactive_insights.status, proactive_insights.delivered_at, proactive_insights.dismissed_at, proactive_insights.was_helpful, proactive_insights.feedback_text, proactive_insights.created_at, proactive_insights.expires_at 
+FROM proactive_insights 
+WHERE proactive_insights.user_id = ? AND proactive_insights.status = ? AND proactive_insights.expires_at > ? ORDER BY proactive_insights.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:04,007 INFO sqlalchemy.engine.Engine [generated in 0.00008s] ('demo', 'pending', '2026-02-01 17:06:04.006649', 5, 0)
+2026-02-01 09:06:04,007 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [generated in 0.00008s] ('demo', 'pending', '2026-02-01 17:06:04.006649', 5, 0)
+2026-02-01 09:06:04,007 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:04,007 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:04,008 - app.main - INFO - [main.py:107] - [5647095b] Response: 200
+INFO:     127.0.0.1:57232 - "GET /api/intelligence/suggestions?user_id=demo&tenant_id=demo HTTP/1.1" 200 OK
+2026-02-01 09:06:09,440 - app.main - INFO - [main.py:102] - [4e2ee29e] GET /health
+2026-02-01 09:06:09,441 - app.main - INFO - [main.py:107] - [4e2ee29e] Response: 200
+INFO:     127.0.0.1:57234 - "GET /health HTTP/1.1" 200 OK
+2026-02-01 09:06:09,449 - app.main - INFO - [main.py:102] - [429c34c1] GET /
+2026-02-01 09:06:09,450 - app.main - INFO - [main.py:107] - [429c34c1] Response: 200
+INFO:     127.0.0.1:57236 - "GET / HTTP/1.1" 200 OK
+2026-02-01 09:06:09,457 - app.main - INFO - [main.py:102] - [76779555] GET /api/suggestions
+2026-02-01 09:06:09,458 - app.api.suggestions - INFO - [suggestions.py:111] - Fetching suggestions - category: None, limit: 5
+2026-02-01 09:06:09,459 - app.main - INFO - [main.py:107] - [76779555] Response: 200
+INFO:     127.0.0.1:57238 - "GET /api/suggestions HTTP/1.1" 200 OK
+2026-02-01 09:06:09,465 - app.main - INFO - [main.py:102] - [76279f06] GET /api/dashboards
+2026-02-01 09:06:09,466 - app.main - INFO - [main.py:107] - [76279f06] Response: 200
+INFO:     127.0.0.1:57240 - "GET /api/dashboards HTTP/1.1" 200 OK
+2026-02-01 09:06:09,473 - app.main - INFO - [main.py:102] - [80f6cdb9] GET /api/connections
+2026-02-01 09:06:09,474 - app.main - INFO - [main.py:107] - [80f6cdb9] Response: 200
+INFO:     127.0.0.1:57242 - "GET /api/connections HTTP/1.1" 200 OK
+2026-02-01 09:06:09,481 - app.main - INFO - [main.py:102] - [b3c67bcb] GET /api/intelligence/suggestions
+2026-02-01 09:06:09,500 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:09,500 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:09,501 INFO sqlalchemy.engine.Engine SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? AND question_history.created_at >= ? ORDER BY question_history.created_at
+2026-02-01 09:06:09,501 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? AND question_history.created_at >= ? ORDER BY question_history.created_at
+2026-02-01 09:06:09,502 INFO sqlalchemy.engine.Engine [cached since 5.5s ago] ('demo', 'demo', '2026-01-02 17:06:09.500047')
+2026-02-01 09:06:09,502 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [cached since 5.5s ago] ('demo', 'demo', '2026-01-02 17:06:09.500047')
+2026-02-01 09:06:09,503 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:09,503 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:09,503 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:09,503 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:09,503 INFO sqlalchemy.engine.Engine SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? ORDER BY question_history.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:09,503 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT question_history.id, question_history.tenant_id, question_history.user_id, question_history.question_text, question_history.question_embedding, question_history.intent_category, question_history.topics, question_history.entities, question_history.generated_sql, question_history.result_summary, question_history.chart_type, question_history.user_action, question_history.is_favorite, question_history.execution_time_ms, question_history.row_count, question_history.error_message, question_history.created_at, question_history.updated_at 
+FROM question_history 
+WHERE question_history.user_id = ? AND question_history.tenant_id = ? ORDER BY question_history.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:09,503 INFO sqlalchemy.engine.Engine [cached since 5.5s ago] ('demo', 'demo', 1, 0)
+2026-02-01 09:06:09,503 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [cached since 5.5s ago] ('demo', 'demo', 1, 0)
+2026-02-01 09:06:09,504 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:09,504 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:09,505 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:09,505 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:09,505 INFO sqlalchemy.engine.Engine SELECT question_history.question_text, count(question_history.id) AS count 
+FROM question_history 
+WHERE question_history.tenant_id = ? GROUP BY question_history.question_text ORDER BY count DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:09,505 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT question_history.question_text, count(question_history.id) AS count 
+FROM question_history 
+WHERE question_history.tenant_id = ? GROUP BY question_history.question_text ORDER BY count DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:09,505 INFO sqlalchemy.engine.Engine [cached since 5.499s ago] ('demo', 5, 0)
+2026-02-01 09:06:09,505 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [cached since 5.499s ago] ('demo', 5, 0)
+2026-02-01 09:06:09,505 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:09,505 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:09,506 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-02-01 09:06:09,506 - sqlalchemy.engine.Engine - INFO - [base.py:2710] - BEGIN (implicit)
+2026-02-01 09:06:09,506 INFO sqlalchemy.engine.Engine SELECT proactive_insights.id, proactive_insights.tenant_id, proactive_insights.user_id, proactive_insights.insight_type, proactive_insights.priority, proactive_insights.title, proactive_insights.description, proactive_insights.suggested_query, proactive_insights.action_type, proactive_insights.data_context, proactive_insights.related_metrics, proactive_insights.status, proactive_insights.delivered_at, proactive_insights.dismissed_at, proactive_insights.was_helpful, proactive_insights.feedback_text, proactive_insights.created_at, proactive_insights.expires_at 
+FROM proactive_insights 
+WHERE proactive_insights.user_id = ? AND proactive_insights.status = ? AND proactive_insights.expires_at > ? ORDER BY proactive_insights.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:09,506 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - SELECT proactive_insights.id, proactive_insights.tenant_id, proactive_insights.user_id, proactive_insights.insight_type, proactive_insights.priority, proactive_insights.title, proactive_insights.description, proactive_insights.suggested_query, proactive_insights.action_type, proactive_insights.data_context, proactive_insights.related_metrics, proactive_insights.status, proactive_insights.delivered_at, proactive_insights.dismissed_at, proactive_insights.was_helpful, proactive_insights.feedback_text, proactive_insights.created_at, proactive_insights.expires_at 
+FROM proactive_insights 
+WHERE proactive_insights.user_id = ? AND proactive_insights.status = ? AND proactive_insights.expires_at > ? ORDER BY proactive_insights.created_at DESC
+ LIMIT ? OFFSET ?
+2026-02-01 09:06:09,506 INFO sqlalchemy.engine.Engine [cached since 5.499s ago] ('demo', 'pending', '2026-02-01 17:06:09.505973', 5, 0)
+2026-02-01 09:06:09,506 - sqlalchemy.engine.Engine - INFO - [base.py:1846] - [cached since 5.499s ago] ('demo', 'pending', '2026-02-01 17:06:09.505973', 5, 0)
+2026-02-01 09:06:09,506 INFO sqlalchemy.engine.Engine ROLLBACK
+2026-02-01 09:06:09,506 - sqlalchemy.engine.Engine - INFO - [base.py:2713] - ROLLBACK
+2026-02-01 09:06:09,506 - app.main - INFO - [main.py:107] - [b3c67bcb] Response: 200
+INFO:     127.0.0.1:57244 - "GET /api/intelligence/suggestions?user_id=demo&tenant_id=demo HTTP/1.1" 200 OK
+2026-02-01 09:06:12,143 - app.main - INFO - [main.py:102] - [77094b94] GET /docs
+2026-02-01 09:06:12,144 - app.main - INFO - [main.py:107] - [77094b94] Response: 200
+INFO:     127.0.0.1:57246 - "GET /docs HTTP/1.1" 200 OK

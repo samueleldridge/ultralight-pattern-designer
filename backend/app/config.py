@@ -124,6 +124,11 @@ class Settings(BaseSettings):
     # =============================================================================
     
     @property
+    def embedding_model(self) -> str:
+        """Alias for openai_embedding_model for backwards compatibility"""
+        return self.openai_embedding_model
+    
+    @property
     def is_production(self) -> bool:
         """Check if running in production environment"""
         return self.environment.lower() == "production"

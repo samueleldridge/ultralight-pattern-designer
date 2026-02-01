@@ -227,6 +227,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if is_exempt:
             return await call_next(request)
         
+        # Skip auth if no Clerk key configured (dev/test mode)
+        settings = get_settings()
+        if not settings.clerk_secret_key or settings.clerk_secret_key == "sk_test_placeholder":
+            # Set mock user for testing
+            request.state.user = {"sub": "test-user", "org_id": "test-tenant"}
+            request.state.user_id = "test-user"
+            request.state.org_id = "test-tenant"
+            return await call_next(request)
+        
         # Check if route requires auth
         requires_auth = any(
             request.url.path.startswith(route) 

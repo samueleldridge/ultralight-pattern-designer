@@ -1,19 +1,38 @@
 """
-Database executor module - backwards compatibility.
-New code should use executor_v2.EnhancedQueryExecutor
+Database module - backwards compatibility and new features.
 """
 
-# Re-export from executor_v2 for backwards compatibility
-from app.database.executor_v2 import (
-    EnhancedQueryExecutor,
-    QueryExecutor,
-    QueryCache,
-    get_executor,
+# Legacy exports (backward compatibility)
+from app.database_legacy import (
+    engine,
+    AsyncSessionLocal,
+    Base,
+    get_db,
+    init_db,
 )
 
+# New database features
+from app.database.executor import QueryExecutor
+from app.database.executor_v2 import EnhancedQueryExecutor, QueryCache, get_executor
+from app.database.connector import DatabaseConfig, DatabaseConnector
+from app.database.dialect import SQLDialect, SQLValidator
+
 __all__ = [
-    "EnhancedQueryExecutor",
+    # Legacy
+    "engine",
+    "AsyncSessionLocal",
+    "Base",
+    "get_db",
+    "init_db",
+    # New executors
     "QueryExecutor",
+    "EnhancedQueryExecutor",
     "QueryCache",
     "get_executor",
+    # Connector
+    "DatabaseConfig",
+    "DatabaseConnector",
+    # Dialect
+    "SQLDialect",
+    "SQLValidator",
 ]

@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: ai-analytics-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: MOONSHOT_MODEL
+        value: kimi-k2-5
+      - key: MOONSHOT_BASE_URL
+        value: https://api.moonshot.cn/v1
+      - key: MOONSHOT_API_KEY
+        sync: false  # Set in Render dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: ai-analytics-redis
+          type: redis
+          property: connectionString
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - backend/**
+
+  - type: web
+    name: ai-analytics-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: Dockerfile
+    buildCommand: npm run build
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: ai-analytics-backend
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+    buildFilter:
+      paths:
+        - frontend/**
+
+  - type: redis
+    name: ai-analytics-redis
+    plan: starter
+    ipAllowList: []

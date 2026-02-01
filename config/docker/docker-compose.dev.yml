@@ -1,0 +1,115 @@
+version: '3.8'
+
+# ═════════════════════════════════════════════════════════════════════════════
+# AI Analytics Platform - Development Docker Compose
+# ═════════════════════════════════════════════════════════════════════════════
+# This configuration includes hot-reload for rapid development.
+# Uses local PostgreSQL (with pgvector) instead of Supabase for dev.
+# ═════════════════════════════════════════════════════════════════════════════
+
+services:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # POSTGRESQL (with pgvector for local development)
+  # ═══════════════════════════════════════════════════════════════════════════
+  postgres:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: aianalytics
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../supabase/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # REDIS
+  # ═══════════════════════════════════════════════════════════════════════════
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BACKEND API (with hot reload)
+  # ═══════════════════════════════════════════════════════════════════════════
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/aianalytics
+      - REDIS_URL=redis://redis:6379
+      - MOONSHOT_API_KEY=${MOONSHOT_API_KEY}
+      - MOONSHOT_BASE_URL=${MOONSHOT_BASE_URL:-https://api.moonshot.cn/v1}
+      - MOONSHOT_MODEL=${MOONSHOT_MODEL:-kimi-k2-5}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:8000
+    volumes:
+      - ../../backend:/app
+      - /app/__pycache__
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app
+    networks:
+      - dev-network
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FRONTEND (with hot reload)
+  # ═══════════════════════════════════════════════════════════════════════════
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+    volumes:
+      - ../../frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    command: npm run dev
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

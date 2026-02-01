@@ -1,110 +1,258 @@
 #!/bin/bash
+# Test runner script for AI Analytics Platform
+# Usage: ./scripts/test.sh [options]
 #
-# Test script to validate the AI Analytics Platform setup
-# Run this after setup to ensure everything is configured correctly
-#
+# Options:
+#   unit        Run unit tests only (fast, no external deps)
+#   integration Run integration tests (requires database)
+#   coverage    Run all tests with coverage report
+#   ci          Run CI test suite
+#   watch       Run tests in watch mode
+#   help        Show this help message
 
 set -e
 
-GREEN='\033[0;32m'
+# Colors for output
 RED='\033[0;31m'
+GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PASSED=0
-FAILED=0
+# Script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+BACKEND_DIR="$PROJECT_ROOT/backend"
 
-test_result() {
-    if [ $1 -eq 0 ]; then
-        echo -e "${GREEN}✓${NC} $2"
-        ((PASSED++))
-    else
-        echo -e "${RED}✗${NC} $2"
-        ((FAILED++))
-    fi
-}
+# Default values
+TEST_TYPE="all"
+COVERAGE=false
+VERBOSE=false
+MARKERS=""
 
-echo ""
-echo "╔══════════════════════════════════════════════════════════════════╗"
-echo "║                    AI Analytics Platform Tests                   ║"
-echo "╚══════════════════════════════════════════════════════════════════╝"
-echo ""
+echo -e "${BLUE}AI Analytics Platform - Test Runner${NC}"
+echo "========================================"
 
-# Test 1: Check .env file exists
-echo "Testing configuration files..."
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    test_result 0 ".env file exists"
-else
-    test_result 1 ".env file exists (run ./scripts/setup.sh)"
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        unit)
+            TEST_TYPE="unit"
+            MARKERS="-m unit"
+            shift
+            ;;
+        integration)
+            TEST_TYPE="integration"
+            MARKERS="-m integration"
+            shift
+            ;;
+        coverage)
+            COVERAGE=true
+            shift
+            ;;
+        ci)
+            TEST_TYPE="ci"
+            MARKERS="-m 'not slow'"
+            COVERAGE=true
+            shift
+            ;;
+        api)
+            TEST_TYPE="api"
+            MARKERS="-m api"
+            shift
+            ;;
+        agent)
+            TEST_TYPE="agent"
+            MARKERS="-m agent"
+            shift
+            ;;
+        db)
+            TEST_TYPE="db"
+            MARKERS="-m db"
+            shift
+            ;;
+        watch)
+            TEST_TYPE="watch"
+            shift
+            ;;
+        --verbose|-v)
+            VERBOSE=true
+            shift
+            ;;
+        help|--help|-h)
+            echo ""
+            echo "Usage: ./scripts/test.sh [command] [options]"
+            echo ""
+            echo "Commands:"
+            echo "  unit         Run unit tests only (fast, mocked)"
+            echo "  integration  Run integration tests (requires services)"
+            echo "  api          Run API endpoint tests"
+            echo "  agent        Run agent workflow tests"
+            echo "  db           Run database tests"
+            echo "  coverage     Run all tests with coverage report"
+            echo "  ci           Run CI test suite (excludes slow tests)"
+            echo "  watch        Run tests in watch mode"
+            echo ""
+            echo "Options:"
+            echo "  -v, --verbose  Enable verbose output"
+            echo "  -h, --help     Show this help message"
+            echo ""
+            echo "Examples:"
+            echo "  ./scripts/test.sh unit           # Run unit tests"
+            echo "  ./scripts/test.sh integration    # Run integration tests"
+            echo "  ./scripts/test.sh coverage       # Run with coverage"
+            echo "  ./scripts/test.sh ci             # Run CI suite"
+            echo "  ./scripts/test.sh -v             # Run all tests verbosely"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            echo "Run './scripts/test.sh help' for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Check if we're in the right directory
+if [ ! -f "$BACKEND_DIR/pytest.ini" ]; then
+    echo -e "${RED}Error: Could not find backend/pytest.ini${NC}"
+    echo "Make sure you're running this script from the project root."
+    exit 1
 fi
 
-# Test 2: Check required env vars
-echo ""
-echo "Testing environment variables..."
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    source "$PROJECT_ROOT/.env"
+# Change to backend directory
+cd "$BACKEND_DIR"
+
+# Check if virtual environment exists
+if [ -d "venv" ]; then
+    echo -e "${BLUE}Activating virtual environment...${NC}"
+    source venv/bin/activate
+elif [ -d ".venv" ]; then
+    echo -e "${BLUE}Activating virtual environment...${NC}"
+    source .venv/bin/activate
+fi
+
+# Install test dependencies if needed
+echo -e "${BLUE}Checking test dependencies...${NC}"
+pip install -q pytest pytest-asyncio pytest-cov httpx anyio 2>/dev/null || true
+
+# Set environment variables for testing
+export PYTHONPATH="${BACKEND_DIR}:${PYTHONPATH}"
+export TESTING=true
+export ENVIRONMENT=test
+
+# Set test database URL if not already set
+if [ -z "$TEST_DATABASE_URL" ]; then
+    export TEST_DATABASE_URL="postgresql+asyncpg://postgres:postgres@localhost:5432/aianalytics_test"
+    echo -e "${YELLOW}Using default test database URL: $TEST_DATABASE_URL${NC}"
+    echo -e "${YELLOW}Set TEST_DATABASE_URL environment variable to override${NC}"
+fi
+
+# Build pytest command
+PYTEST_ARGS=""
+
+# Add markers
+if [ -n "$MARKERS" ]; then
+    PYTEST_ARGS="$PYTEST_ARGS $MARKERS"
+fi
+
+# Add coverage if requested
+if [ "$COVERAGE" = true ]; then
+    PYTEST_ARGS="$PYTEST_ARGS --cov=app --cov-report=term-missing --cov-report=html:htmlcov"
+fi
+
+# Add verbosity
+if [ "$VERBOSE" = true ]; then
+    PYTEST_ARGS="$PYTEST_ARGS -v -s"
+fi
+
+# Handle watch mode
+if [ "$TEST_TYPE" = "watch" ]; then
+    echo -e "${BLUE}Running tests in watch mode...${NC}"
+    echo -e "${YELLOW}Install pytest-watch with: pip install pytest-watch${NC}"
     
-    [ -n "$MOONSHOT_API_KEY" ] && test_result 0 "MOONSHOT_API_KEY is set" || test_result 1 "MOONSHOT_API_KEY is set"
-    [ -n "$SUPABASE_URL" ] && test_result 0 "SUPABASE_URL is set" || test_result 1 "SUPABASE_URL is set"
-    [ -n "$SUPABASE_SERVICE_KEY" ] && test_result 0 "SUPABASE_SERVICE_KEY is set" || test_result 1 "SUPABASE_SERVICE_KEY is set"
-    [ -n "$CLERK_SECRET_KEY" ] && test_result 0 "CLERK_SECRET_KEY is set" || test_result 1 "CLERK_SECRET_KEY is set"
-fi
-
-# Test 3: Check Docker
-echo ""
-echo "Testing Docker..."
-docker ps > /dev/null 2>&1 && test_result 0 "Docker daemon is running" || test_result 1 "Docker daemon is running"
-command -v docker-compose > /dev/null 2>&1 && test_result 0 "Docker Compose is installed" || test_result 1 "Docker Compose is installed"
-
-# Test 4: Check file structure
-echo ""
-echo "Testing file structure..."
-[ -f "$PROJECT_ROOT/backend/app/main.py" ] && test_result 0 "Backend main.py exists" || test_result 1 "Backend main.py exists"
-[ -f "$PROJECT_ROOT/frontend/package.json" ] && test_result 0 "Frontend package.json exists" || test_result 1 "Frontend package.json exists"
-[ -f "$PROJECT_ROOT/docker-compose.yml" ] && test_result 0 "docker-compose.yml exists" || test_result 1 "docker-compose.yml exists"
-[ -f "$PROJECT_ROOT/config/supabase/schema.sql" ] && test_result 0 "Database schema exists" || test_result 1 "Database schema exists"
-
-# Test 5: Test API connectivity (if running)
-echo ""
-echo "Testing API connectivity..."
-if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-    test_result 0 "Backend API is responding"
-    
-    # Test specific endpoints
-    curl -s http://localhost:8000/health | grep -q "ok" && test_result 0 "Health endpoint returns ok" || test_result 1 "Health endpoint returns ok"
-else
-    test_result 1 "Backend API is responding (is it running?)"
-fi
-
-# Test 6: Test Moonshot API
-echo ""
-echo "Testing external APIs..."
-if [ -n "${MOONSHOT_API_KEY:-}" ]; then
-    if curl -s -H "Authorization: Bearer $MOONSHOT_API_KEY" https://api.moonshot.cn/v1/models > /dev/null 2>&1; then
-        test_result 0 "Moonshot API key is valid"
+    if command -v ptw &> /dev/null; then
+        ptw tests/ -- $PYTEST_ARGS
     else
-        test_result 1 "Moonshot API key is valid"
+        echo -e "${RED}pytest-watch not installed. Install with: pip install pytest-watch${NC}"
+        exit 1
+    fi
+    exit 0
+fi
+
+# Check database connection for integration tests
+if [ "$TEST_TYPE" = "integration" ] || [ "$TEST_TYPE" = "ci" ] || [ "$TEST_TYPE" = "db" ]; then
+    echo -e "${BLUE}Checking database connection...${NC}"
+    
+    # Try to connect to the database
+    python3 -c "
+import asyncio
+import sys
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
+
+async def check_db():
+    try:
+        engine = create_async_engine('$TEST_DATABASE_URL', echo=False)
+        async with engine.connect() as conn:
+            result = await conn.execute(text('SELECT 1'))
+            print('Database connection successful')
+            return True
+    except Exception as e:
+        print(f'Database connection failed: {e}')
+        return False
+
+success = asyncio.run(check_db())
+sys.exit(0 if success else 1)
+" || {
+        echo -e "${RED}Failed to connect to test database.${NC}"
+        echo -e "${YELLOW}Make sure PostgreSQL is running and accessible.${NC}"
+        echo -e "${YELLOW}You may need to create the test database:${NC}"
+        echo -e "${YELLOW}  createdb aianalytics_test${NC}"
+        exit 1
+    }
+fi
+
+# Run tests
+echo ""
+echo -e "${BLUE}Running tests...${NC}"
+echo "========================================"
+
+if [ "$TEST_TYPE" = "unit" ]; then
+    echo -e "${GREEN}Running unit tests (fast, no external deps)...${NC}"
+elif [ "$TEST_TYPE" = "integration" ]; then
+    echo -e "${GREEN}Running integration tests...${NC}"
+elif [ "$TEST_TYPE" = "api" ]; then
+    echo -e "${GREEN}Running API tests...${NC}"
+elif [ "$TEST_TYPE" = "agent" ]; then
+    echo -e "${GREEN}Running agent tests...${NC}"
+elif [ "$TEST_TYPE" = "db" ]; then
+    echo -e "${GREEN}Running database tests...${NC}"
+elif [ "$TEST_TYPE" = "ci" ]; then
+    echo -e "${GREEN}Running CI test suite...${NC}"
+else
+    echo -e "${GREEN}Running all tests...${NC}"
+fi
+
+# Run pytest
+python -m pytest tests/ $PYTEST_ARGS
+
+# Capture exit code
+EXIT_CODE=$?
+
+echo ""
+echo "========================================"
+
+if [ $EXIT_CODE -eq 0 ]; then
+    echo -e "${GREEN}All tests passed!${NC}"
+    
+    if [ "$COVERAGE" = true ]; then
+        echo ""
+        echo -e "${BLUE}Coverage report generated in htmlcov/index.html${NC}"
+        echo -e "${BLUE}Open with: open htmlcov/index.html${NC}"
     fi
 else
-    test_result 1 "Moonshot API key is valid (not set)"
+    echo -e "${RED}Tests failed with exit code $EXIT_CODE${NC}"
 fi
 
-# Summary
-echo ""
-echo "═══════════════════════════════════════════════════════════════════"
-if [ $FAILED -eq 0 ]; then
-    echo -e "${GREEN}✅ All tests passed!${NC}"
-else
-    echo -e "${YELLOW}⚠️  $FAILED test(s) failed${NC}"
-    echo ""
-    echo "Troubleshooting:"
-    echo "  1. Run ./scripts/setup.sh to configure environment"
-    echo "  2. Run make start to start services"
-    echo "  3. Check QUICKSTART.md for help"
-fi
-echo "═══════════════════════════════════════════════════════════════════"
-echo "Passed: $PASSED | Failed: $FAILED"
-echo ""
-
-exit $FAILED
+exit $EXIT_CODE

@@ -19,3 +19,10 @@ pandas==2.2.0
 httpx==0.26.0
 python-dotenv==1.0.0
 structlog==24.1.0
+
+# Testing dependencies
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0
+anyio==4.2.0

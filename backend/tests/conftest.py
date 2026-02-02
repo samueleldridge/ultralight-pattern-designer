@@ -100,8 +100,8 @@ from app.agent.state import AgentState
 # Event Loop Fixture
 # =============================================================================
 
-@pytest.fixture(scope="session")
-def event_loop():
+@pytest_asyncio.fixture(scope="session")
+async def event_loop():
     """Create an instance of the default event loop for the test session."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -141,9 +141,10 @@ def patch_settings(mock_settings):
 # Database Fixtures
 # =============================================================================
 
-@pytest_asyncio.fixture(scope="session")
-async def db_engine():
+@pytest.fixture(scope="session")
+def db_engine():
     """Create a database engine for testing."""
+    import asyncio
     from sqlalchemy.ext.asyncio import create_async_engine
     
     engine = create_async_engine(
@@ -152,17 +153,27 @@ async def db_engine():
         future=True,
     )
     
-    # Create tables
+    # Create tables using a new event loop
     from app.database_legacy import Base
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    async def setup():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(setup())
+    loop.close()
     
     yield engine
     
     # Cleanup
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+    async def teardown():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+        await engine.dispose()
+    
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(teardown())
+    loop.close()
 
 
 @pytest_asyncio.fixture

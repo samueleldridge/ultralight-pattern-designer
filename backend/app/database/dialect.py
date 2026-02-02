@@ -24,6 +24,22 @@ class SQLValidator:
     def __init__(self, dialect: SQLDialect):
         self.dialect = dialect
     
+    # Patterns that indicate SQL injection attempts
+    RISKY_PATTERNS = [
+        r';\s*DROP\s+',
+        r';\s*DELETE\s+',
+        r';\s*INSERT\s+',
+        r';\s*UPDATE\s+',
+        r'UNION\s+SELECT',
+        r'UNION\s+ALL\s+SELECT',
+        r'OR\s+\'\d+\'\s*=\s*\'\d+\'',
+        r'OR\s+\d+\s*=\s*\d+',
+        r'--\s*\+',
+        r'/\*.*\*/',
+        r';\s*EXEC\s*\(',
+        r';\s*EXECUTE\s*\(',
+    ]
+    
     def validate(self, sql: str) -> Dict[str, Any]:
         """Validate SQL and return detailed results"""
         errors = []
@@ -35,9 +51,18 @@ class SQLValidator:
             if re.search(rf'\b{keyword}\b', sql_upper):
                 errors.append(f"Forbidden keyword detected: {keyword}")
         
-        # 2. Must start with SELECT
-        if not sql.strip().upper().startswith('SELECT'):
-            errors.append("Query must start with SELECT")
+        # 2. Check for SQL injection patterns
+        risky = False
+        for pattern in self.RISKY_PATTERNS:
+            if re.search(pattern, sql, re.IGNORECASE):
+                risky = True
+                errors.append(f"Potentially unsafe SQL pattern detected")
+                break
+        
+        # 3. Must start with SELECT or WITH (for CTEs)
+        sql_stripped = sql.strip().upper()
+        if not (sql_stripped.startswith('SELECT') or sql_stripped.startswith('WITH')):
+            errors.append("Query must start with SELECT or WITH (for CTEs)")
         
         # 3. Dialect-specific validation
         dialect_errors = self._validate_dialect_specific(sql)
@@ -50,12 +75,17 @@ class SQLValidator:
         syntax_errors = self._check_basic_syntax(sql)
         errors.extend(syntax_errors)
         
-        return {
+        result = {
             "valid": len(errors) == 0,
             "errors": errors,
             "warnings": warnings,
             "dialect": self.dialect
         }
+        
+        if risky:
+            result["risky"] = True
+            
+        return result
     
     def _validate_dialect_specific(self, sql: str) -> List[str]:
         """Dialect-specific validation rules"""
@@ -206,40 +236,57 @@ class SQLDialectAdapter:
         return sql
     
     @staticmethod
-    def get_dialect_specific_prompt_hints(dialect: SQLDialect) -> str:
+    def get_dialect_specific_prompt_hints(dialect: SQLDialect) -> dict:
         """Get prompt hints for LLM about dialect specifics"""
         hints = {
-            SQLDialect.POSTGRESQL: """
-- Use double quotes for identifiers if needed
-- ILIKE is supported for case-insensitive matching
-- Use :: for casting (e.g., '2024-01-01'::DATE)
-- LIMIT n OFFSET m syntax
-- NOW() returns timestamp with timezone
-""",
-            SQLDialect.MYSQL: """
-- Use backticks for identifiers
-- No ILIKE - use LOWER(column) = LOWER('value')
-- Use CAST() for type casting, not ::
-- LIMIT offset, count syntax
-- NOW() returns local timestamp
-""",
-            SQLDialect.SNOWFLAKE: """
-- Always qualify with database.schema.table if possible
-- Use TO_TIMESTAMP() for date parsing
-- LIMIT n syntax
-- Case-sensitive by default
-""",
-            SQLDialect.BIGQUERY: """
-- Use backticks for project.dataset.table references
-- Use CURRENT_TIMESTAMP() not NOW()
-- Partitioned tables should use partition filters
-- LIMIT n syntax
-""",
-            SQLDialect.SQLSERVER: """
-- Use TOP n instead of LIMIT
-- Use square brackets [identifier] if needed
-- GETDATE() instead of NOW()
-"""
+            SQLDialect.POSTGRESQL: {
+                "identifier_style": "double quotes",
+                "string_functions": "ILIKE supported for case-insensitive matching",
+                "casting": "Use :: for casting (e.g., '2024-01-01'::DATE)",
+                "pagination": "LIMIT n OFFSET m syntax",
+                "date_functions": "NOW() returns timestamp with timezone",
+                "backticks": False
+            },
+            SQLDialect.MYSQL: {
+                "identifier_style": "backticks",
+                "string_functions": "No ILIKE - use LOWER(column) = LOWER('value')",
+                "casting": "Use CAST() for type casting, not ::",
+                "pagination": "LIMIT offset, count syntax",
+                "date_functions": "NOW() returns local timestamp",
+                "backticks": True
+            },
+            SQLDialect.SNOWFLAKE: {
+                "identifier_style": "database.schema.table qualification",
+                "string_functions": "Standard SQL",
+                "casting": "Use TO_TIMESTAMP() for date parsing",
+                "pagination": "LIMIT n syntax",
+                "date_functions": "Case-sensitive by default",
+                "backticks": False
+            },
+            SQLDialect.BIGQUERY: {
+                "identifier_style": "backticks for project.dataset.table",
+                "string_functions": "Standard SQL",
+                "casting": "Standard CAST",
+                "pagination": "LIMIT n syntax",
+                "date_functions": "Use CURRENT_TIMESTAMP() not NOW()",
+                "backticks": True
+            },
+            SQLDialect.SQLSERVER: {
+                "identifier_style": "square brackets [identifier]",
+                "string_functions": "Standard SQL",
+                "casting": "Standard CAST",
+                "pagination": "Use TOP n instead of LIMIT",
+                "date_functions": "GETDATE() instead of NOW()",
+                "backticks": False
+            },
+            SQLDialect.SQLITE: {
+                "identifier_style": "double quotes or none",
+                "string_functions": "Standard SQL, no ILIKE",
+                "casting": "CAST() function",
+                "pagination": "LIMIT n OFFSET m",
+                "date_functions": "DATE(), DATETIME(), STRFTIME()",
+                "backticks": False
+            }
         }
         
-        return hints.get(dialect, "")
+        return hints.get(dialect, {})

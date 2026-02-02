@@ -90,9 +90,18 @@ class QueryCache:
 class QueryExecutor:
     """Execute queries with caching, timeouts, and monitoring"""
     
-    def __init__(self):
+    def __init__(self, config: Optional[DatabaseConfig] = None):
+        self.config = config
         self.cache = QueryCache()
         self.active_queries = {}
+    
+    def validate_sql(self, query: str) -> bool:
+        """Validate SQL without executing"""
+        from app.database.dialect import SQLValidator, SQLDialect
+        dialect = SQLDialect(self.config.db_type) if self.config else SQLDialect.POSTGRESQL
+        validator = SQLValidator(dialect)
+        result = validator.validate(query)
+        return result["valid"]
     
     async def execute(
         self,

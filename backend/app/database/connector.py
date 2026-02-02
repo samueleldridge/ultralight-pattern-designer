@@ -51,9 +51,26 @@ class DatabaseConfig(BaseModel):
     warehouse: Optional[str] = None  # For Snowflake
     project_id: Optional[str] = None  # For BigQuery
     ssl_mode: Optional[str] = None
+    ssl_cert: Optional[str] = None
+    ssh_host: Optional[str] = None
+    ssh_port: Optional[int] = 22
+    ssh_username: Optional[str] = None
+    ssh_key_path: Optional[str] = None
     
     class Config:
         from_attributes = True
+    
+    @property
+    def connection_string(self) -> str:
+        """Generate SQLAlchemy connection string"""
+        if self.db_type == DatabaseType.POSTGRESQL:
+            return f"postgresql+asyncpg://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+        elif self.db_type == DatabaseType.MYSQL:
+            return f"mysql+aiomysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database}"
+        elif self.db_type == DatabaseType.SQLITE:
+            return f"sqlite+aiosqlite:///{self.database}"
+        else:
+            raise ValueError(f"Unsupported database type: {self.db_type}")
 
 
 class SchemaColumn(BaseModel):

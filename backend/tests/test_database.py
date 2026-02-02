@@ -533,9 +533,10 @@ class TestDemoDatabase:
     @pytest.mark.asyncio
     async def test_date_trunc_query(self, demo_database):
         """Should support date truncation."""
+        # Use SQLite-compatible date functions (strftime instead of DATE_TRUNC)
         result = await demo_database.execute(text("""
             SELECT 
-                DATE_TRUNC('month', o.order_date) as month,
+                strftime('%Y-%m', o.order_date) as month,
                 COUNT(*) as orders,
                 SUM(o.total) as revenue
             FROM orders o

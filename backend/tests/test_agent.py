@@ -50,10 +50,10 @@ class TestClassifyNode:
     @pytest.mark.asyncio
     async def test_classify_complex_query(self, sample_agent_state, mock_llm_provider):
         """Complex query should be classified as 'complex'."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "intent": "complex",
             "reasoning": "Requires multiple joins"
-        })
+        }))
         
         sample_agent_state["query"] = "What is the average revenue per customer by region?"
         result = await classify_intent_node(sample_agent_state)
@@ -63,10 +63,10 @@ class TestClassifyNode:
     @pytest.mark.asyncio
     async def test_classify_clarify_needed(self, sample_agent_state, mock_llm_provider):
         """Ambiguous query should need clarification."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "intent": "clarify",
             "reasoning": "Missing time range"
-        })
+        }))
         
         result = await classify_intent_node(sample_agent_state)
         
@@ -77,10 +77,10 @@ class TestClassifyNode:
     @pytest.mark.asyncio
     async def test_classify_investigate_query(self, sample_agent_state, mock_llm_provider):
         """Investigation query should be classified as 'investigate'."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "intent": "investigate",
             "reasoning": "Asking 'why' question"
-        })
+        }))
         
         sample_agent_state["query"] = "Why did sales drop last month?"
         result = await classify_intent_node(sample_agent_state)
@@ -90,7 +90,7 @@ class TestClassifyNode:
     @pytest.mark.asyncio
     async def test_classify_handles_invalid_json(self, sample_agent_state, mock_llm_provider):
         """Should handle invalid JSON response gracefully."""
-        mock_llm_provider.generate.return_value = "invalid json"
+        mock_llm_provider.set_chatopenai_response("invalid json")
         
         result = await classify_intent_node(sample_agent_state)
         
@@ -513,11 +513,11 @@ class TestAnalyzeNode:
     @pytest.mark.asyncio
     async def test_analyze_with_results(self, sample_agent_state, mock_llm_provider):
         """Should analyze results and generate insights."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "summary": "Revenue increased by 15%",
             "insights": ["Strong growth in Q4", "Mobile sales leading"],
             "follow_ups": ["What drove Q4 growth?", "Compare to last year"]
-        })
+        }))
         
         sample_agent_state["execution_result"] = {
             "rows": [{"month": "2024-01", "revenue": 100000}],
@@ -533,7 +533,7 @@ class TestAnalyzeNode:
     @pytest.mark.asyncio
     async def test_analyze_handles_json_error(self, sample_agent_state, mock_llm_provider):
         """Should handle invalid JSON response."""
-        mock_llm_provider.generate.return_value = "invalid json"
+        mock_llm_provider.set_chatopenai_response("invalid json")
         
         sample_agent_state["execution_result"] = {
             "rows": [{"test": 1}],
@@ -549,11 +549,11 @@ class TestAnalyzeNode:
     
     @pytest.mark.asyncio
     async def test_generate_viz_table_default(self, sample_agent_state):
-        """Should default to table visualization."""
+        """Should default to table visualization for non-numeric data."""
         sample_agent_state["execution_result"] = {
-            "rows": [{"a": 1, "b": 2}],
+            "rows": [{"name": "Alice", "role": "admin"}],
             "row_count": 1,
-            "columns": ["a", "b"]
+            "columns": ["name", "role"]
         }
         
         result = await generate_viz_node(sample_agent_state)
@@ -593,11 +593,11 @@ class TestErrorNode:
     @pytest.mark.asyncio
     async def test_analyze_validation_error(self, sample_agent_state, mock_llm_provider):
         """Should analyze validation error."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "can_fix": True,
             "suggestion": "SELECT * FROM orders",
             "user_question": None
-        })
+        }))
         
         sample_agent_state["validation_error"] = "Query missing FROM clause"
         sample_agent_state["sql"] = "SELECT *"
@@ -611,11 +611,11 @@ class TestErrorNode:
     @pytest.mark.asyncio
     async def test_analyze_max_retries_reached(self, sample_agent_state, mock_llm_provider):
         """Should ask for clarification after max retries."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "can_fix": True,
             "suggestion": "SELECT * FROM orders",
             "user_question": None
-        })
+        }))
         
         sample_agent_state["validation_error"] = "Syntax error"
         sample_agent_state["retry_count"] = 3  # Max retries
@@ -627,11 +627,11 @@ class TestErrorNode:
     @pytest.mark.asyncio
     async def test_analyze_cannot_fix(self, sample_agent_state, mock_llm_provider):
         """Should ask for clarification when error can't be fixed."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "can_fix": False,
             "suggestion": None,
             "user_question": "What time period are you interested in?"
-        })
+        }))
         
         sample_agent_state["validation_error"] = "Ambiguous column reference"
         
@@ -818,16 +818,7 @@ class TestWorkflowIntegration:
     async def test_simple_query_workflow(self, mock_llm_provider):
         """Test complete workflow for simple query."""
         # Mock LLM responses for each step
-        mock_llm_provider.generate.side_effect = [
-            # classify
-            json.dumps({"intent": "simple", "reasoning": "Direct lookup"}),
-            # analyze results (if reached)
-            json.dumps({
-                "summary": "Test summary",
-                "insights": ["Test insight"],
-                "follow_ups": ["Follow up?"]
-            })
-        ]
+        mock_llm_provider.set_chatopenai_response(json.dumps({"intent": "simple", "reasoning": "Direct lookup"}))
         
         mock_llm_provider.generate_json.return_value = {
             "sql": "SELECT COUNT(*) as total FROM orders",
@@ -868,10 +859,10 @@ class TestWorkflowIntegration:
     @pytest.mark.asyncio
     async def test_clarification_workflow(self, mock_llm_provider):
         """Test workflow that requires clarification."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "intent": "clarify",
             "reasoning": "Missing time range"
-        })
+        }))
         
         state = AgentState(
             query="What was revenue?",
@@ -895,11 +886,11 @@ class TestWorkflowIntegration:
     @pytest.mark.asyncio
     async def test_retry_workflow(self, mock_llm_provider):
         """Test workflow with SQL retry after error."""
-        mock_llm_provider.generate.return_value = json.dumps({
+        mock_llm_provider.set_chatopenai_response(json.dumps({
             "can_fix": True,
             "suggestion": "SELECT * FROM orders WHERE 1=1",
             "user_question": None
-        })
+        }))
         
         state = AgentState(
             query="Test",

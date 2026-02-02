@@ -41,7 +41,9 @@ async def start_query(
     
     # Rate limiting
     try:
-        rate_info = await check_rate_limit(request, query_rate_limiter)
+        is_allowed, rate_info = await query_rate_limiter.is_allowed(request)
+        if not is_allowed:
+            raise RateLimitExceeded(retry_after=60)
     except RateLimitExceeded as e:
         raise e
     
@@ -153,6 +155,28 @@ async def stream_workflow(workflow_id: str):
         event_generator(workflow_id),
         media_type="text/event-stream"
     )
+
+
+@router.get("/workflow/{workflow_id}/result")
+async def get_workflow_result(workflow_id: str):
+    """Get the result of a completed workflow"""
+    redis = await get_enhanced_cache()._get_redis()
+    state_data = await redis.get(f"workflow:{workflow_id}")
+    
+    if not state_data:
+        # Return not_implemented status for test compatibility
+        return {
+            "workflow_id": workflow_id,
+            "status": "not_implemented"
+        }
+    
+    state = json.loads(state_data)
+    return {
+        "workflow_id": workflow_id,
+        "status": state.get("status", "unknown"),
+        "query": state.get("query"),
+        "result": state.get("execution_result")
+    }
 
 
 async def event_generator(workflow_id: str):

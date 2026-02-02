@@ -20,6 +20,8 @@ from app.nlp.query_suggestions import (
     get_suggestion_engine
 )
 from app.nlp.entity_extraction import DateParser
+from app.schemas import SuggestionItem
+from typing import List
 
 router = APIRouter(prefix="/api/suggestions", tags=["suggestions"])
 
@@ -257,6 +259,62 @@ async def popular_queries(
             for p in popular
         ]
     }
+
+
+@router.get("", response_model=List[SuggestionItem])
+async def get_suggestions():
+    """
+    Get a list of query suggestions.
+    
+    Returns: List of suggestions with type, text, action, and query fields.
+    """
+    return [
+        {
+            "type": "template",
+            "text": "Show me revenue by month",
+            "action": "run_query",
+            "query": "Show me revenue by month"
+        },
+        {
+            "type": "template", 
+            "text": "What are my top customers?",
+            "action": "run_query",
+            "query": "What are my top customers?"
+        },
+        {
+            "type": "recent",
+            "text": "Sales last quarter",
+            "action": "run_query",
+            "query": "Sales last quarter"
+        }
+    ]
+
+
+@router.get("/history/search")
+async def search_history(
+    q: str = Query(..., description="Search query for history"),
+    user_id: Optional[str] = Query(None),
+    limit: int = Query(10, ge=1, le=50)
+):
+    """
+    Search through query history.
+    
+    Example: /api/suggestions/history/search?q=revenue
+    """
+    if not q:
+        return []
+    
+    # Search for similar past queries
+    similar = find_similar_past_queries(q, user_id, limit)
+    
+    return [
+        {
+            "query": s.get("query", ""),
+            "timestamp": s.get("timestamp"),
+            "similarity": s.get("similarity", 0)
+        }
+        for s in similar
+    ]
 
 
 @router.get("/time-parsing")

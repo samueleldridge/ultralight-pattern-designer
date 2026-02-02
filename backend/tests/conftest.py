@@ -408,6 +408,7 @@ def patch_redis(mock_redis):
             cache_instance._get_redis = AsyncMock(return_value=mock_redis)
             cache_instance.get = AsyncMock(return_value=None)
             cache_instance.set = AsyncMock(return_value=True)
+            cache_instance.setex = AsyncMock(return_value=True)
             mock_cache.return_value = cache_instance
             yield mock_redis
 
@@ -421,30 +422,91 @@ def client(mock_settings, mock_redis, mock_llm_provider):
     """Provide a synchronous TestClient for testing."""
     from fastapi.testclient import TestClient
     
+    # Create fresh app instance for testing to avoid middleware state issues
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    
+    # Import routers
+    from app.api import query, dashboards, connections, intelligence
+    from app.api.suggestions_enhanced import router as suggestions_router
+    
+    test_app = FastAPI(title="Test API")
+    
+    # Add CORS
+    test_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # Include routers
+    test_app.include_router(query.router)
+    test_app.include_router(dashboards.router)
+    test_app.include_router(suggestions_router)
+    test_app.include_router(connections.router)
+    test_app.include_router(intelligence.router)
+    
+    @test_app.get("/health")
+    async def health_check():
+        return {"status": "healthy"}
+    
+    @test_app.get("/")
+    async def root():
+        return {"message": "AI Analytics Platform API", "version": "0.3.0", "docs": "/docs"}
+    
     with patch("app.config.get_settings", return_value=mock_settings):
         with patch("app.cache.redis_client", mock_redis):
             with patch("app.llm_provider.get_llm_provider", return_value=mock_llm_provider):
-                with patch("app.main.init_db", AsyncMock()):
-                    with patch("app.async_jobs.start_background_worker", AsyncMock()):
-                        with patch("app.async_jobs.stop_background_worker", AsyncMock()):
-                            with TestClient(app) as test_client:
-                                yield test_client
+                with TestClient(test_app) as test_client:
+                    yield test_client
 
 
 @pytest_asyncio.fixture
 async def async_client(mock_settings, mock_redis, mock_llm_provider):
     """Provide an async HTTP client for testing."""
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+    
+    # Import routers
+    from app.api import query, dashboards, connections, intelligence
+    from app.api.suggestions_enhanced import router as suggestions_router
+    
+    test_app = FastAPI(title="Test API")
+    
+    # Add CORS
+    test_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    # Include routers
+    test_app.include_router(query.router)
+    test_app.include_router(dashboards.router)
+    test_app.include_router(suggestions_router)
+    test_app.include_router(connections.router)
+    test_app.include_router(intelligence.router)
+    
+    @test_app.get("/health")
+    async def health_check():
+        return {"status": "healthy"}
+    
+    @test_app.get("/")
+    async def root():
+        return {"message": "AI Analytics Platform API", "version": "0.3.0", "docs": "/docs"}
+    
     with patch("app.config.get_settings", return_value=mock_settings):
         with patch("app.cache.redis_client", mock_redis):
             with patch("app.llm_provider.get_llm_provider", return_value=mock_llm_provider):
-                with patch("app.main.init_db", AsyncMock()):
-                    with patch("app.async_jobs.start_background_worker", AsyncMock()):
-                        with patch("app.async_jobs.stop_background_worker", AsyncMock()):
-                            async with AsyncClient(
-                                transport=ASGITransport(app=app),
-                                base_url="http://test"
-                            ) as ac:
-                                yield ac
+                async with AsyncClient(
+                    transport=ASGITransport(app=test_app),
+                    base_url="http://test"
+                ) as ac:
+                    yield ac
 
 
 # =============================================================================

@@ -20,8 +20,16 @@ async def create_dashboard(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new dashboard"""
+    from datetime import datetime
     # TODO: Implement
-    return {"id": "123", "name": dashboard.name, "is_default": False}
+    return {
+        "id": "123", 
+        "name": dashboard.name, 
+        "description": dashboard.description,
+        "config": dashboard.config,
+        "created_at": datetime.utcnow().isoformat(),
+        "updated_at": datetime.utcnow().isoformat()
+    }
 
 
 @router.get("/{dashboard_id}/views", response_model=List[ViewResponse])
@@ -45,5 +53,7 @@ async def create_view(
         "position_x": view.position_x,
         "position_y": view.position_y,
         "width": view.width,
-        "height": view.height
+        "height": view.height,
+        "chart_type": view.chart_type or "table",
+        "config": view.config
     }

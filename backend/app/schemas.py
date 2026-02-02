@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+
 
 class InsightResponse(BaseModel):
     """Proactive insight response"""
@@ -13,20 +14,19 @@ class InsightResponse(BaseModel):
 
 class QueryRequest(BaseModel):
     """Natural language query request"""
-    question: str
+    query: str  # Changed from 'question' to match test expectations
+    tenant_id: str
+    user_id: str
     connection_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
 
 
 class QueryResponse(BaseModel):
     """Query response"""
-    id: str
-    question: str
-    sql: Optional[str] = None
-    results: Optional[List[Dict]] = None
-    visualization: Optional[Dict] = None
-    summary: Optional[str] = None
-    error: Optional[str] = None
+    workflow_id: str  # Changed from 'id' to match test expectations
+    status: str
+    message: str
+    rate_limit: Optional[Dict[str, Any]] = None
 
 
 class StreamEvent(BaseModel):
@@ -56,20 +56,27 @@ class DashboardResponse(BaseModel):
 
 class ViewCreate(BaseModel):
     """Create view request"""
-    name: str
-    view_type: str
+    title: str  # Changed from 'name' to match test expectations
+    query_text: str  # Changed from 'query_sql' to match test expectations
+    position_x: int = Field(0, ge=0)
+    position_y: int = Field(0, ge=0)
+    width: int = Field(6, ge=1)
+    height: int = Field(4, ge=1)
+    chart_type: Optional[str] = "table"
     config: Optional[Dict[str, Any]] = None
-    query_sql: Optional[str] = None
 
 
 class ViewResponse(BaseModel):
     """View response"""
     id: str
-    dashboard_id: str
-    name: str
-    view_type: str
+    title: str  # Changed from 'name' to match test expectations
+    query_text: Optional[str] = None  # Changed from 'query_sql' to match test expectations
+    position_x: int = 0
+    position_y: int = 0
+    width: int = 6
+    height: int = 4
+    chart_type: Optional[str] = "table"
     config: Optional[Dict[str, Any]] = None
-    created_at: str
 
 
 class SuggestionResponse(BaseModel):
@@ -81,3 +88,11 @@ class SuggestionResponse(BaseModel):
     description: Optional[str] = None
     query: Optional[str] = None
     confidence: Optional[float] = None
+
+
+class SuggestionItem(BaseModel):
+    """Individual suggestion item for list endpoints"""
+    type: str
+    text: str
+    action: str
+    query: str

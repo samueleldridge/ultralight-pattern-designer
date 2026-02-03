@@ -12,7 +12,7 @@ from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.cache import get_enhanced_cache
+from app.cache import get_cache
 from app.agent.state import AgentState
 from app.agent.workflow import workflow_app
 from app.agent.messages import (
@@ -76,17 +76,13 @@ async def start_query(
         investigation_complete=False
     )
     
-    # Store initial state (Redis if available, else memory)
-    _workflow_store[workflow_id] = initial_state
-    try:
-        redis = await get_enhanced_cache()._get_redis()
-        await redis.setex(
-            f"workflow:{workflow_id}",
-            3600,  # 1 hour expiry
-            json.dumps(initial_state, default=str)
-        )
-    except Exception:
-        pass  # Memory store already set
+    # Store initial state in cache (Redis or SQLite fallback)
+    cache = await get_cache()
+    await cache.set(
+        f"workflow:{workflow_id}",
+        json.dumps(initial_state, default=str),
+        ttl=3600  # 1 hour expiry
+    )
     
     # Log query start
     audit = get_audit_logger()
@@ -161,33 +157,17 @@ async def stream_workflow(workflow_id: str):
     )
 
 
-# In-memory store for demo (when Redis unavailable)
-_workflow_store = {}
-
 @router.get("/workflow/{workflow_id}/result")
 async def get_workflow_result(workflow_id: str):
     """Get the result of a completed workflow"""
-    # Try Redis first, fallback to memory store
-    try:
-        redis = await get_enhanced_cache()._get_redis()
-        state_data = await redis.get(f"workflow:{workflow_id}")
-        if state_data:
-            state = json.loads(state_data)
-            return {
-                "workflow_id": workflow_id,
-                "status": state.get("status", "unknown"),
-                "query": state.get("query"),
-                "result": state.get("execution_result")
-            }
-    except Exception:
-        pass
+    cache = await get_cache()
+    state_data = await cache.get(f"workflow:{workflow_id}")
     
-    # Fallback to in-memory
-    if workflow_id in _workflow_store:
-        state = _workflow_store[workflow_id]
+    if state_data:
+        state = json.loads(state_data)
         return {
             "workflow_id": workflow_id,
-            "status": state.get("status", "completed"),
+            "status": state.get("status", "unknown"),
             "query": state.get("query"),
             "result": state.get("execution_result")
         }
@@ -201,12 +181,15 @@ async def get_workflow_result(workflow_id: str):
 
 async def event_generator(workflow_id: str):
     """Generate SSE events for workflow"""
-    # Get initial state from memory store
-    if workflow_id not in _workflow_store:
+    cache = await get_cache()
+    
+    # Get initial state from cache
+    state_data = await cache.get(f"workflow:{workflow_id}")
+    if not state_data:
         yield f"data: {json.dumps({'error': 'Workflow not found'})}\n\n"
         return
     
-    initial_state = _workflow_store[workflow_id]
+    initial_state = json.loads(state_data)
     
     # Send initial event
     yield f"data: {json.dumps({'step': 'start', 'status': 'started', 'message': 'Initializing...'})}\n\n"
@@ -252,8 +235,12 @@ async def event_generator(workflow_id: str):
             # Send SSE event
             yield f"data: {json.dumps(stream_event)}\n\n"
             
-            # Store updated state in memory
-            _workflow_store[workflow_id] = state
+            # Store updated state in cache
+            await cache.set(
+                f"workflow:{workflow_id}",
+                json.dumps(state, default=str),
+                ttl=3600
+            )
         
         # Send completion event
         yield f"data: {json.dumps({'step': 'end', 'status': 'complete', 'message': 'Workflow complete'})}\n\n"
@@ -262,7 +249,7 @@ async def event_generator(workflow_id: str):
         yield f"data: {json.dumps({'step': 'error', 'status': 'error', 'message': str(e)})}\n\n"
     
     finally:
-        # Keep in store for result retrieval
+        # Keep in cache for result retrieval (already set with TTL)
         pass
 
 
@@ -283,8 +270,8 @@ async def export_data(
     await check_rate_limit(request, export_rate_limiter)
     
     # Get results from workflow
-    redis = await get_enhanced_cache()._get_redis()
-    state_data = await redis.get(f"workflow:{workflow_id}")
+    cache = await get_cache()
+    state_data = await cache.get(f"workflow:{workflow_id}")
     
     if not state_data:
         raise HTTPException(status_code=404, detail="Workflow not found")

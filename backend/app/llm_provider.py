@@ -1,66 +1,64 @@
 """
-LLM Provider module with Kimi K2.5 (Moonshot) primary support
-and OpenAI fallback.
+LLM Provider module - Backward compatibility wrapper
+
+New code should use: from app.llm_factory import get_llm_provider
+
+This module maintains backward compatibility with existing imports.
 """
 
-import json
-from typing import Optional, Any, AsyncIterator
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import BaseMessage
-from app.config import get_settings
+from typing import Optional, Dict, Any
 
+# Re-export from new factory module for backward compatibility
+from app.llm_factory import (
+    get_llm_provider,
+    LLMProviderFactory,
+    LLMProviderType,
+    LLMResponse,
+    MoonshotProvider,
+    OpenAIProvider,
+    AnthropicProvider,
+    BaseLLMProvider,
+)
 
+# For backward compatibility - map new factory to old interface
 class LLMProvider:
     """
-    Unified LLM provider that supports multiple backends.
-    Primary: Moonshot (Kimi K2.5)
-    Fallback: OpenAI
+    Backward-compatible LLM Provider wrapper.
+    
+    New code should use:
+        from app.llm_factory import get_llm_provider
+        provider = get_llm_provider()  # or get_llm_provider("moonshot")
     """
     
     def __init__(self):
-        self.settings = get_settings()
-        self._moonshot_client: Optional[ChatOpenAI] = None
-        self._openai_client: Optional[ChatOpenAI] = None
+        self._provider = None
+    
+    def _get_provider(self):
+        """Lazy load the underlying provider"""
+        if self._provider is None:
+            self._provider = get_llm_provider()
+        return self._provider
     
     @property
-    def moonshot_client(self) -> Optional[ChatOpenAI]:
-        """Lazy initialization of Moonshot client"""
-        if self._moonshot_client is None and self.settings.moonshot_api_key:
-            self._moonshot_client = ChatOpenAI(
-                model=self.settings.moonshot_model,
-                temperature=self.settings.moonshot_temperature,
-                max_tokens=self.settings.moonshot_max_tokens,
-                timeout=self.settings.moonshot_timeout,
-                api_key=self.settings.moonshot_api_key,
-                base_url=self.settings.moonshot_base_url,
-                model_kwargs={
-                    "top_p": 0.9,
-                }
-            )
-        return self._moonshot_client
+    def moonshot_client(self):
+        """Get Moonshot client (for backward compatibility)"""
+        try:
+            return LLMProviderFactory.get_provider("moonshot")
+        except Exception:
+            return None
     
     @property
-    def openai_client(self) -> Optional[ChatOpenAI]:
-        """Lazy initialization of OpenAI client (fallback)"""
-        if self._openai_client is None and self.settings.openai_api_key:
-            self._openai_client = ChatOpenAI(
-                model=self.settings.openai_model,
-                temperature=0.1,
-                api_key=self.settings.openai_api_key
-            )
-        return self._openai_client
+    def openai_client(self):
+        """Get OpenAI client (for backward compatibility)"""
+        try:
+            return LLMProviderFactory.get_provider("openai")
+        except Exception:
+            return None
     
     @property
-    def primary_client(self) -> ChatOpenAI:
-        """Get the primary LLM client"""
-        if self.moonshot_client:
-            return self.moonshot_client
-        if self.openai_client:
-            return self.openai_client
-        raise RuntimeError(
-            "No LLM provider configured. "
-            "Set MOONSHOT_API_KEY or OPENAI_API_KEY in .env"
-        )
+    def primary_client(self):
+        """Get primary client (for backward compatibility)"""
+        return self._get_provider()
     
     async def generate(
         self, 
@@ -68,128 +66,92 @@ class LLMProvider:
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        response_format: Optional[dict] = None
+        response_format: Optional[Dict] = None
     ) -> str:
-        """
-        Generate text from prompt using primary LLM.
-        Falls back to secondary provider if primary fails.
-        """
-        messages = []
+        """Generate text (backward compatible)"""
+        provider = self._get_provider()
+        response = await provider.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature or 0.1,
+            max_tokens=max_tokens,
+            response_format=response_format
+        )
         
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
+        if response.error:
+            raise RuntimeError(f"LLM generation failed: {response.error}")
         
-        messages.append({"role": "user", "content": prompt})
-        
-        # Try primary (Moonshot/Kimi K2.5)
-        try:
-            client = self.primary_client
-            
-            # Override params if provided
-            kwargs = {}
-            if temperature is not None:
-                kwargs["temperature"] = temperature
-            if max_tokens is not None:
-                kwargs["max_tokens"] = max_tokens
-            if response_format:
-                kwargs["response_format"] = response_format
-            
-            response = await client.ainvoke(messages, **kwargs)
-            return response.content
-            
-        except Exception as e:
-            # Try fallback (OpenAI)
-            if self.openai_client and self.moonshot_client:
-                print(f"Moonshot failed, trying OpenAI fallback: {e}")
-                try:
-                    response = await self.openai_client.ainvoke(messages)
-                    return response.content
-                except Exception as fallback_error:
-                    raise RuntimeError(
-                        f"Both primary and fallback LLMs failed. "
-                        f"Primary error: {e}, Fallback error: {fallback_error}"
-                    )
-            raise
+        return response.content
     
     async def generate_json(
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        temperature: Optional[float] = None
-    ) -> dict:
-        """
-        Generate and parse JSON response.
-        """
-        # For Moonshot/Kimi, we can use response_format
-        if self.moonshot_client:
-            response_format = {"type": "json_object"}
-            content = await self.generate(
-                prompt,
-                system_prompt=system_prompt,
-                temperature=temperature,
-                response_format=response_format
-            )
-        else:
-            # For OpenAI, add JSON instruction to prompt
-            json_prompt = prompt + "\n\nRespond with valid JSON only."
-            content = await self.generate(
-                json_prompt,
-                system_prompt=system_prompt,
-                temperature=temperature
-            )
-        
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON response: {e}\nResponse: {content[:500]}")
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Generate JSON (backward compatible)"""
+        provider = self._get_provider()
+        return await provider.generate_json(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature or 0.1,
+            max_tokens=max_tokens
+        )
     
-    async def stream(
-        self,
-        prompt: str,
-        system_prompt: Optional[str] = None
-    ) -> AsyncIterator[str]:
-        """
-        Stream text generation.
-        """
-        messages = []
-        
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        
-        messages.append({"role": "user", "content": prompt})
-        
-        client = self.primary_client
-        
-        async for chunk in client.astream(messages):
-            if chunk.content:
-                yield chunk.content
+    async def stream(self, prompt: str, system_prompt: Optional[str] = None):
+        """Stream generation (backward compatible)"""
+        # This is a simplified implementation
+        content = await self.generate(prompt, system_prompt)
+        yield content
 
 
-# Global instance
+# Global instance for backward compatibility
 _llm_provider: Optional[LLMProvider] = None
 
 
-def get_llm_provider() -> LLMProvider:
-    """Get or create global LLM provider instance"""
+def get_llm_provider_legacy() -> LLMProvider:
+    """Get or create global LLM provider instance (backward compatible)"""
     global _llm_provider
     if _llm_provider is None:
         _llm_provider = LLMProvider()
     return _llm_provider
 
 
-# Backward compatibility
+# Alias for new code
+get_llm_provider_new = get_llm_provider
+
+
+# Convenience functions for specific providers
+def get_moonshot_provider():
+    """Get Moonshot/Kimi K2.5 provider"""
+    return LLMProviderFactory.get_provider("moonshot")
+
+
+def get_openai_provider():
+    """Get OpenAI provider"""
+    return LLMProviderFactory.get_provider("openai")
+
+
+def get_anthropic_provider():
+    """Get Anthropic/Claude provider"""
+    return LLMProviderFactory.get_provider("anthropic")
+
+
 async def generate_with_kimi(
     prompt: str,
     system_prompt: Optional[str] = None,
     temperature: float = 0.1
 ) -> str:
-    """
-    Convenience function for direct Kimi K2.5 usage.
-    Maintains backward compatibility with existing code.
-    """
-    provider = get_llm_provider()
-    return await provider.generate(
+    """Convenience function for direct Kimi K2.5 usage"""
+    provider = get_moonshot_provider()
+    response = await provider.generate(
         prompt=prompt,
         system_prompt=system_prompt,
         temperature=temperature
     )
+    
+    if response.error:
+        raise RuntimeError(f"Kimi generation failed: {response.error}")
+    
+    return response.content

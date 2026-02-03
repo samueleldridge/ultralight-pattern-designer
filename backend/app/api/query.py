@@ -76,13 +76,17 @@ async def start_query(
         investigation_complete=False
     )
     
-    # Store initial state in Redis for streaming
-    redis = await get_enhanced_cache()._get_redis()
-    await redis.setex(
-        f"workflow:{workflow_id}",
-        3600,  # 1 hour expiry
-        json.dumps(initial_state, default=str)
-    )
+    # Store initial state (Redis if available, else memory)
+    _workflow_store[workflow_id] = initial_state
+    try:
+        redis = await get_enhanced_cache()._get_redis()
+        await redis.setex(
+            f"workflow:{workflow_id}",
+            3600,  # 1 hour expiry
+            json.dumps(initial_state, default=str)
+        )
+    except Exception:
+        pass  # Memory store already set
     
     # Log query start
     audit = get_audit_logger()
@@ -157,41 +161,52 @@ async def stream_workflow(workflow_id: str):
     )
 
 
+# In-memory store for demo (when Redis unavailable)
+_workflow_store = {}
+
 @router.get("/workflow/{workflow_id}/result")
 async def get_workflow_result(workflow_id: str):
     """Get the result of a completed workflow"""
-    redis = await get_enhanced_cache()._get_redis()
-    state_data = await redis.get(f"workflow:{workflow_id}")
+    # Try Redis first, fallback to memory store
+    try:
+        redis = await get_enhanced_cache()._get_redis()
+        state_data = await redis.get(f"workflow:{workflow_id}")
+        if state_data:
+            state = json.loads(state_data)
+            return {
+                "workflow_id": workflow_id,
+                "status": state.get("status", "unknown"),
+                "query": state.get("query"),
+                "result": state.get("execution_result")
+            }
+    except Exception:
+        pass
     
-    if not state_data:
-        # Return not_implemented status for test compatibility
+    # Fallback to in-memory
+    if workflow_id in _workflow_store:
+        state = _workflow_store[workflow_id]
         return {
             "workflow_id": workflow_id,
-            "status": "not_implemented"
+            "status": state.get("status", "completed"),
+            "query": state.get("query"),
+            "result": state.get("execution_result")
         }
     
-    state = json.loads(state_data)
+    # Return not_implemented status for test compatibility
     return {
         "workflow_id": workflow_id,
-        "status": state.get("status", "unknown"),
-        "query": state.get("query"),
-        "result": state.get("execution_result")
+        "status": "not_implemented"
     }
 
 
 async def event_generator(workflow_id: str):
     """Generate SSE events for workflow"""
-    from app.cache import redis_client
-    
-    redis = redis_client
-    
-    # Get initial state
-    state_data = await redis.get(f"workflow:{workflow_id}")
-    if not state_data:
+    # Get initial state from memory store
+    if workflow_id not in _workflow_store:
         yield f"data: {json.dumps({'error': 'Workflow not found'})}\n\n"
         return
     
-    initial_state = json.loads(state_data)
+    initial_state = _workflow_store[workflow_id]
     
     # Send initial event
     yield f"data: {json.dumps({'step': 'start', 'status': 'started', 'message': 'Initializing...'})}\n\n"
@@ -237,12 +252,8 @@ async def event_generator(workflow_id: str):
             # Send SSE event
             yield f"data: {json.dumps(stream_event)}\n\n"
             
-            # Store updated state
-            await redis.setex(
-                f"workflow:{workflow_id}",
-                3600,
-                json.dumps(state, default=str)
-            )
+            # Store updated state in memory
+            _workflow_store[workflow_id] = state
         
         # Send completion event
         yield f"data: {json.dumps({'step': 'end', 'status': 'complete', 'message': 'Workflow complete'})}\n\n"
@@ -251,8 +262,8 @@ async def event_generator(workflow_id: str):
         yield f"data: {json.dumps({'step': 'error', 'status': 'error', 'message': str(e)})}\n\n"
     
     finally:
-        # Clean up
-        await redis.delete(f"workflow:{workflow_id}")
+        # Keep in store for result retrieval
+        pass
 
 
 @router.post("/export")

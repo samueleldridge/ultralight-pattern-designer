@@ -210,6 +210,9 @@ class EntityResolver:
         
         # Strategy 2: Exact match with abbreviation expansion
         exact_result = await self._try_exact_match(mention, context)
+        if exact_result.requires_clarification:
+            # Multiple exact matches - ask user immediately
+            return exact_result
         if exact_result.confidence > self.confidence_thresholds['auto_accept']:
             return exact_result
         
@@ -291,12 +294,16 @@ class EntityResolver:
             ValueMatch(m, 0.9, 'exact', mention) for m in matches
         ]
         
+        # Generate clarification question
+        question = self._generate_clarification_question(mention, candidates)
+        
         return ResolutionResult(
             match=None,
             confidence=0.7,
             source='exact_ambiguous',
             requires_clarification=True,
             candidates=candidates,
+            clarification_question=question,
             reasoning=f"'{mention}' found in {len(matches)} places"
         )
     
@@ -389,10 +396,9 @@ class EntityResolver:
             reasoning=f"Best guess (confidence: {best_score:.2f})"
         )
     
-    async def _generate_clarification(self, mention: str,
-                                       candidates: List[ValueMatch],
-                                       context: QueryContext) -> ResolutionResult:
-        """Generate clarification request when ambiguous"""
+    def _generate_clarification_question(self, mention: str,
+                                          candidates: List[ValueMatch]) -> str:
+        """Generate clarification question text"""
         
         # Group by entity type
         by_type = {}
@@ -416,6 +422,15 @@ class EntityResolver:
             for i, match in enumerate(candidates[:3], 1):
                 entry = match.entry
                 question += f"{i}. {entry.canonical_value} ({entry.table}.{entry.column})\n"
+        
+        return question
+    
+    async def _generate_clarification(self, mention: str,
+                                       candidates: List[ValueMatch],
+                                       context: QueryContext) -> ResolutionResult:
+        """Generate clarification request when ambiguous"""
+        
+        question = self._generate_clarification_question(mention, candidates)
         
         return ResolutionResult(
             match=None,

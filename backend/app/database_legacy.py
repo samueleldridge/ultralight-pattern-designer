@@ -18,15 +18,18 @@ settings = get_settings()
 # =============================================================================
 
 # Create async engine with connection pooling settings
-engine = create_async_engine(
-    settings.database_url,
-    echo=settings.debug,
-    future=True,
-    pool_size=settings.db_pool_size,
-    max_overflow=settings.db_max_overflow,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+# SQLite doesn't support pool_size/max_overflow
+engine_kwargs = {
+    "echo": settings.debug,
+    "future": True,
+    "pool_pre_ping": True,
+    "pool_recycle": 3600,
+}
+if not settings.database_url.startswith("sqlite"):
+    engine_kwargs["pool_size"] = settings.db_pool_size
+    engine_kwargs["max_overflow"] = settings.db_max_overflow
+
+engine = create_async_engine(settings.database_url, **engine_kwargs)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(

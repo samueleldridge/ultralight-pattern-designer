@@ -1,7 +1,15 @@
 from sqlalchemy import Column, String, Integer, DateTime, JSON, ForeignKey, Text, Float, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from app.database import Base
+from app.config import get_settings
 from datetime import datetime
+
+# Use String for UUID on SQLite, native UUID on PostgreSQL
+settings = get_settings()
+if settings.database_url.startswith("sqlite"):
+    UUID = String
+else:
+    UUID = PGUUID
 
 # Document RAG models
 class Document(Base):
@@ -9,13 +17,13 @@ class Document(Base):
     __tablename__ = "documents"
     
     id = Column(String, primary_key=True)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
     name = Column(String, nullable=False)
     content_type = Column(String(50))  # pdf, txt, md, etc.
     chunk_count = Column(Integer, default=0)
     file_size = Column(Integer)  # bytes
     meta_data = Column(JSON)  # Renamed from 'metadata' (reserved in SQLAlchemy)
-    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    uploaded_by = Column(UUID, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
@@ -26,7 +34,7 @@ class DocumentChunk(Base):
     
     id = Column(String, primary_key=True)
     document_id = Column(String, ForeignKey("documents.id"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
     content = Column(Text, nullable=False)
     chunk_index = Column(Integer, nullable=False)
     embedding = Column(Text)  # Store as text for SQLite compatibility
@@ -39,7 +47,7 @@ class Tenant(Base):
     """Organization/tenant model"""
     __tablename__ = "tenants"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(UUID, primary_key=True)
     name = Column(String, nullable=False)
     slug = Column(String, unique=True, nullable=False)
     plan = Column(String, default="free")  # free, pro, enterprise
@@ -51,8 +59,8 @@ class User(Base):
     """User account model"""
     __tablename__ = "users"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
     email = Column(String, unique=True, nullable=False)
     name = Column(String)
     role = Column(String, default="member")  # admin, member, viewer
@@ -64,9 +72,9 @@ class QuestionHistory(Base):
     """Stores user query history"""
     __tablename__ = "question_history"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
     question = Column(Text, nullable=False)
     sql_generated = Column(Text)
     results_summary = Column(Text)
@@ -78,8 +86,8 @@ class UserProfile(Base):
     """User preferences and behavioral patterns"""
     __tablename__ = "user_profiles"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False)
     preferences = Column(JSON)
     common_queries = Column(JSON)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
@@ -90,8 +98,8 @@ class DBConnection(Base):
     """Database connection configuration"""
     __tablename__ = "db_connections"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
     name = Column(String, nullable=False)
     db_type = Column(String, nullable=False)  # postgresql, mysql, etc.
     host = Column(String)
@@ -107,9 +115,9 @@ class Dashboard(Base):
     """Saved dashboards"""
     __tablename__ = "dashboards"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
     description = Column(Text)
     config = Column(JSON)  # Dashboard layout and widgets
@@ -122,8 +130,8 @@ class DashboardView(Base):
     """Individual views/widgets within a dashboard"""
     __tablename__ = "dashboard_views"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    dashboard_id = Column(UUID(as_uuid=True), ForeignKey("dashboards.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    dashboard_id = Column(UUID, ForeignKey("dashboards.id"), nullable=False)
     name = Column(String, nullable=False)
     view_type = Column(String, nullable=False)  # chart, table, metric
     config = Column(JSON)  # View-specific configuration
@@ -136,8 +144,8 @@ class ProactiveInsight(Base):
     """AI-generated insights"""
     __tablename__ = "proactive_insights"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id"), nullable=False)
+    id = Column(UUID, primary_key=True)
+    tenant_id = Column(UUID, ForeignKey("tenants.id"), nullable=False)
     title = Column(String, nullable=False)
     description = Column(Text)
     insight_type = Column(String)  # trend, anomaly, recommendation

@@ -197,3 +197,8 @@ INFO:     127.0.0.1:57244 - "GET /api/intelligence/suggestions?user_id=demo&tena
 2026-02-01 09:06:12,143 - app.main - INFO - [main.py:102] - [77094b94] GET /docs
 2026-02-01 09:06:12,144 - app.main - INFO - [main.py:107] - [77094b94] Response: 200
 INFO:     127.0.0.1:57246 - "GET /docs HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-02-02 15:07:03,834 - app.main - INFO - [main.py:55] - Shutting down application...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39127]

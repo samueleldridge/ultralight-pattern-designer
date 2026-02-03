@@ -1,0 +1,71 @@
+{
+  "tables": [
+    {
+      "name": "clients",
+      "total_rows": 11,
+      "entity_columns": [
+        {
+          "name": "name",
+          "type": "TEXT",
+          "distinct_count": 11,
+          "entity_type": "company",
+          "sample_values": [
+            "Microsoft Corporation",
+            "Microsoft Corp",
+            "Lloyds Banking Group Ltd",
+            "Lloyds Banking Group",
+            "International Business Machines"
+          ]
+        },
+        {
+          "name": "industry",
+          "type": "TEXT",
+          "distinct_count": 3,
+          "entity_type": "unknown",
+          "sample_values": [
+            "Technology",
+            "Manufacturing",
+            "Financial Services"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "engagements",
+      "total_rows": 5,
+      "entity_columns": [
+        {
+          "name": "name",
+          "type": "TEXT",
+          "distinct_count": 5,
+          "entity_type": "unknown",
+          "sample_values": [
+            "Microsoft Partnership",
+            "Lloyds Migration",
+            "IBM Implementation",
+            "Apple Integration",
+            "Acme Project"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "distinct_count": 3,
+          "entity_type": "unknown",
+          "sample_values": [
+            "active",
+            "planning",
+            "completed"
+          ]
+        }
+      ]
+    }
+  ],
+  "primary_entities": [
+    [
+      "clients",
+      "name"
+    ]
+  ],
+  "indexed_at": "2026-02-03T12:27:09.636299"
+}

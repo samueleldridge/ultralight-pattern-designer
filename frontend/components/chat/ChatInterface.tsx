@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ChartRenderer, ChartTypeSelector } from '@/components/ChartRenderer'
 
 interface Step {
   id: string
@@ -36,6 +37,7 @@ interface Message {
   currentStep?: string
   sql?: string
   result?: any
+  resultData?: any[]  // Full result data for chart rendering
   chartType?: string
   timestamp: Date
 }
@@ -50,6 +52,7 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
   const [showSql, setShowSql] = useState<string | null>(null)
+  const [chartTypes, setChartTypes] = useState<Record<string, string>>({})
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -139,6 +142,10 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
         }
         if (data.result_preview) {
           assistantMessage.result = data.result_preview
+          // Store full data for chart rendering
+          if (data.result_preview.rows) {
+            assistantMessage.resultData = data.result_preview.rows
+          }
         }
         if (data.viz_config) {
           assistantMessage.chartType = data.viz_config.type
@@ -403,13 +410,14 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
                           </div>
                         )}
 
-                        {/* Results Preview */}
-                        {message.result && (
+                        {/* Results Preview with Charts */}
+                        {message.result && message.resultData && (
                           <motion.div 
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="glass-card rounded-xl p-3"
+                            className="space-y-3"
                           >
+                            {/* Chart Type Selector */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4 text-primary" />
@@ -417,11 +425,27 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
                                   {message.result.row_count} results found
                                 </span>
                               </div>
+                              <ChartTypeSelector
+                                value={chartTypes[message.id] || message.chartType || 'table'}
+                                onChange={(type) => setChartTypes(prev => ({ ...prev, [message.id]: type }))}
+                              />
+                            </div>
+                            
+                            {/* Chart Renderer */}
+                            <ChartRenderer
+                              data={message.resultData}
+                              chartType={(chartTypes[message.id] || message.chartType || 'table') as any}
+                              title={message.content?.slice(0, 50)}
+                            />
+                            
+                            {/* Add to Dashboard Button */}
+                            <div className="flex justify-end">
                               <button 
                                 onClick={() => onAddView({
                                   title: message.content?.slice(0, 30) || 'Query Results',
                                   query: message.content,
-                                  data: message.result
+                                  data: message.result,
+                                  chartType: chartTypes[message.id] || message.chartType || 'table'
                                 })}
                                 className="text-xs text-primary hover:text-accent transition-colors font-medium"
                               >

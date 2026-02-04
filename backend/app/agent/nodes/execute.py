@@ -1,18 +1,25 @@
 import json
-import asyncpg
+import aiosqlite
 from typing import Dict, Any
 from app.agent.state import AgentState
 from app.config import get_settings
 
 settings = get_settings()
 
-# Demo database connection (same as app DB for MVP)
-# In production, this would use customer-provided connection strings
-DEMO_DATABASE_URL = "postgresql://postgres:postgres@postgres:5432/aianalytics"
+# Use SQLite for local development (PostgreSQL in production)
+DEMO_DATABASE_URL = settings.database_url if hasattr(settings, 'database_url') else "sqlite+aiosqlite:///./test.db"
+
+# Extract path from SQLite URL
+def get_sqlite_path(url: str) -> str:
+    if url.startswith("sqlite+aiosqlite:///"):
+        return url.replace("sqlite+aiosqlite:///", "")
+    elif url.startswith("sqlite://"):
+        return url.replace("sqlite:///", "")
+    return "./test.db"
 
 
 async def execute_sql_node(state: AgentState) -> AgentState:
-    """Execute SQL against database"""
+    """Execute SQL against database (SQLite for local dev)"""
     
     state["current_step"] = "execute_sql"
     state["step_message"] = "Executing query..."
@@ -26,14 +33,16 @@ async def execute_sql_node(state: AgentState) -> AgentState:
         return state
     
     try:
-        # Connect to database
-        conn = await asyncpg.connect(DEMO_DATABASE_URL)
+        # Get database path
+        db_path = get_sqlite_path(DEMO_DATABASE_URL)
         
-        # Set timeout
-        await conn.execute("SET statement_timeout = '30000'")  # 30 seconds
+        # Connect to SQLite database
+        conn = await aiosqlite.connect(db_path)
+        conn.row_factory = aiosqlite.Row
         
         # Execute query
-        rows = await conn.fetch(sql)
+        cursor = await conn.execute(sql)
+        rows = await cursor.fetchall()
         
         # Convert to dict
         results = [dict(row) for row in rows]

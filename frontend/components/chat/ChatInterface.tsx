@@ -14,10 +14,14 @@ import {
   MessageSquare,
   CheckCircle2,
   Circle,
-  AlertCircle
+  AlertCircle,
+  History,
+  Command
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChartRenderer, ChartTypeSelector } from '@/components/ChartRenderer'
+import { QueryHistorySidebar } from '@/components/QueryHistorySidebar'
+import { CommandPalette } from '@/components/CommandPalette'
 
 interface Step {
   id: string
@@ -53,6 +57,27 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [showSql, setShowSql] = useState<string | null>(null)
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({})
+  const [showHistory, setShowHistory] = useState(false)
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘K or Ctrl+K for command palette
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowCommandPalette(true)
+      }
+      // ⌘H or Ctrl+H for history
+      if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+        e.preventDefault()
+        setShowHistory(true)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -493,6 +518,48 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* History Sidebar */}
+      <QueryHistorySidebar
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        onSelectQuery={(query) => {
+          setInput(query)
+          setShowHistory(false)
+          inputRef.current?.focus()
+        }}
+      />
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onSelectQuery={(query) => {
+          setInput(query)
+          setShowCommandPalette(false)
+          inputRef.current?.focus()
+        }}
+      />
+
+      {/* Floating Action Buttons */}
+      {isExpanded && (
+        <div className="absolute -left-12 top-4 flex flex-col gap-2">
+          <button
+            onClick={() => setShowHistory(true)}
+            className="p-2 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-foreground-muted hover:text-foreground transition-colors"
+            title="History (⌘H)"
+          >
+            <History className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowCommandPalette(true)}
+            className="p-2 rounded-lg bg-surface hover:bg-surface-elevated border border-border text-foreground-muted hover:text-foreground transition-colors"
+            title="Command Palette (⌘K)"
+          >
+            <Command className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </motion.div>
   )
 }

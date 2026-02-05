@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import init_db
-from app.api import query, dashboards, connections, intelligence, history, user_memory
+from app.api import query, dashboards, connections, intelligence, history, user_memory, subscriptions
 from app.api.suggestions_enhanced import router as suggestions_router
 from app.middleware import (
     RateLimitMiddleware,
@@ -92,6 +92,7 @@ app.include_router(connections.router)
 app.include_router(intelligence.router)
 app.include_router(history.router)
 app.include_router(user_memory.router)
+app.include_router(subscriptions.router)
 
 
 @app.get("/health")

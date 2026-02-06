@@ -5,7 +5,7 @@ Unit tests for Query History Service (Build #3)
 import pytest
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 
 # Add backend to path
 import sys
@@ -66,7 +66,7 @@ class TestQueryHistoryService:
         """Test cosine similarity of identical vectors is 1"""
         similarity = query_history_service._cosine_similarity(sample_embedding, sample_embedding)
         
-        assert similarity == 1.0
+        assert abs(similarity - 1.0) < 1e-10  # Floating point tolerance
     
     def test_cosine_similarity_orthogonal(self, query_history_service):
         """Test cosine similarity of orthogonal vectors is 0"""

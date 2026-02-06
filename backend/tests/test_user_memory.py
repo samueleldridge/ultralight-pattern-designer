@@ -16,7 +16,6 @@ from app.intelligence.user_memory import (
     UserProfile,
     UserInteraction,
     ProactiveIntelligenceService,
-    SubscriptionConditionType,
     ProactivePriority,
     InterestCategory
 )
@@ -142,7 +141,7 @@ class TestUserMemoryService:
         assert interaction.tenant_id == "tenant1"
         assert "revenue" in interaction.themes
         assert "revenue" in interaction.entities_mentioned
-        assert interaction.sql == "SELECT SUM(amount) FROM orders"
+        assert interaction.sql_generated == "SELECT SUM(amount) FROM orders"
         assert interaction.chart_type == "metric"
     
     @pytest.mark.asyncio

@@ -22,7 +22,7 @@ from enum import Enum
 import json
 import hashlib
 
-from sqlalchemy import select, desc, func, and_, text
+from sqlalchemy import select, desc, func, and_, text, Column, String, DateTime, Text, Integer, Boolean, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
@@ -102,6 +102,10 @@ class ProactiveSuggestion:
 class UserProfile(Base):
     """Long-term user memory and preferences"""
     __tablename__ = "user_profiles"
+    __table_args__ = (
+        UniqueConstraint('user_id', 'tenant_id', name='uq_user_tenant'),
+        {'extend_existing': True}
+    )
     
     id = Column(String, primary_key=True)
     user_id = Column(String, index=True, nullable=False)
@@ -123,15 +127,12 @@ class UserProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_proactive_check = Column(DateTime, nullable=True)
-    
-    __table_args__ = (
-        UniqueConstraint('user_id', 'tenant_id', name='uq_user_tenant'),
-    )
 
 
 class UserInteraction(Base):
     """Complete record of user-LLM interactions"""
     __tablename__ = "user_interactions"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True)
     user_id = Column(String, index=True, nullable=False)
@@ -166,6 +167,7 @@ class UserInteraction(Base):
 class ProactiveSuggestionRecord(Base):
     """Stored proactive suggestions for delivery"""
     __tablename__ = "proactive_suggestions"
+    __table_args__ = {'extend_existing': True}
     
     id = Column(String, primary_key=True)
     user_id = Column(String, index=True, nullable=False)
@@ -185,10 +187,6 @@ class ProactiveSuggestionRecord(Base):
     dismissed = Column(Boolean, default=False)
     
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
-# Import at bottom to avoid circular imports
-from sqlalchemy import Column, String, DateTime, Text, Integer, Boolean, UniqueConstraint
 
 
 class InterestDetectionService:

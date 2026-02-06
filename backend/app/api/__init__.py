@@ -10,6 +10,7 @@ from .intelligence import router as intelligence_router
 from .history import router as history_router
 from .user_memory import router as user_memory_router
 from .subscriptions import router as subscriptions_router
+from .chat_sessions import router as chat_sessions_router
 
 __all__ = [
     "router",
@@ -20,4 +21,5 @@ __all__ = [
     "history_router",
     "user_memory_router",
     "subscriptions_router",
+    "chat_sessions_router",
 ]

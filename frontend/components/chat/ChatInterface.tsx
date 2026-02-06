@@ -59,6 +59,10 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
   const [chartTypes, setChartTypes] = useState<Record<string, string>>({})
   const [showHistory, setShowHistory] = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
+  
+  // Session management
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [showSessionManager, setShowSessionManager] = useState(false)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -73,10 +77,85 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
         e.preventDefault()
         setShowHistory(true)
       }
+      // ⌘N or Ctrl+N for new session
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault()
+        createNewSession()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Create new session
+  const createNewSession = async () => {
+    try {
+      const response = await fetch('/api/chat/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Chat' })
+      })
+      
+      if (response.ok) {
+        const session = await response.json()
+        setSessionId(session.id)
+        setMessages([]) // Clear messages for new session
+      }
+    } catch (error) {
+      console.error('Failed to create session:', error)
+    }
+  }
+
+  // Load session messages
+  const loadSession = async (id: string) => {
+    try {
+      const response = await fetch(`/api/chat/sessions/${id}`)
+      if (response.ok) {
+        const session = await response.json()
+        setSessionId(session.id)
+        
+        // Convert to Message format
+        const loadedMessages: Message[] = session.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          sql: m.sql_generated,
+          timestamp: new Date(m.created_at)
+        }))
+        
+        setMessages(loadedMessages)
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error)
+    }
+  }
+
+  // Persist message to backend
+  const persistMessage = async (message: Message) => {
+    if (!sessionId) return
+    
+    try {
+      await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: message.role,
+          content: message.content,
+          sql_generated: message.sql,
+          chart_type: message.chartType
+        })
+      })
+    } catch (error) {
+      console.error('Failed to persist message:', error)
+    }
+  }
+
+  // Create session on first load if none exists
+  useEffect(() => {
+    if (!sessionId) {
+      createNewSession()
+    }
   }, [])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -99,6 +178,9 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
+    
+    // Persist user message
+    await persistMessage(userMessage)
 
     try {
       // Start query
@@ -118,12 +200,16 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
       const eventSource = new EventSource(`/api/stream/${workflow_id}`)
       let assistantMessage: Message | null = null
 
-      eventSource.onmessage = (event) => {
+      eventSource.onmessage = async (event) => {
         const data = JSON.parse(event.data)
         
         if (data.step === 'end') {
           eventSource.close()
           setIsLoading(false)
+          // Persist complete assistant message
+          if (assistantMessage) {
+            await persistMessage(assistantMessage)
+          }
           return
         }
 

@@ -164,10 +164,11 @@ class SubscriptionService:
         SubscriptionFrequency.MONTHLY: "0 9 1 * *",   # 1st of month at 9am
     }
     
-    def __init__(self, db_executor, llm_service, cron_service):
+    def __init__(self, db_executor=None, llm_service=None, cron_service=None, email_service=None):
         self.db = db_executor
         self.llm = llm_service
         self.cron = cron_service
+        self.email = email_service
     
     async def create_subscription(
         self,
@@ -367,7 +368,7 @@ class SubscriptionService:
         subscription: QuerySubscription,
         result: SubscriptionResult
     ):
-        """Generate and send notification"""
+        """Generate and send notification (in-app + email)"""
         
         # Generate human-readable message
         if result.condition_met:
@@ -386,29 +387,64 @@ class SubscriptionService:
         else:
             message = f"Your {subscription.name} check completed. No issues found."
         
-        notification = SubscriptionNotification(
-            id=self._generate_id(),
-            subscription_id=subscription.id,
-            user_id=subscription.user_id,
-            tenant_id=subscription.tenant_id,
-            title=subscription.name,
-            message=message,
-            context=subscription.description or "",
-            result_summary=result.condition_details.get("summary", ""),
-            action_prompt="Would you like me to dive into this data for you?",
-            created_at=datetime.utcnow()
-        )
-        
         # Store notification
         result.notification_message = message
         result.notification_sent = True
         result.notification_delivered_at = datetime.utcnow()
         
-        # Here you would also send via channel (email, slack, etc.)
-        # For now, it's stored for in-app retrieval
-        
         async with AsyncSessionLocal() as session:
             await session.commit()
+        
+        # Send email if configured
+        if subscription.notification_channel in ["email", "both"]:
+            await self._send_email_notification(subscription, result, message)
+    
+    async def _send_email_notification(
+        self,
+        subscription: QuerySubscription,
+        result: SubscriptionResult,
+        message: str
+    ):
+        """Send email notification"""
+        if not self.email:
+            return
+        
+        # Get user email (would need to fetch from user service)
+        # For now, we'll need to pass email in or look it up
+        user_email = await self._get_user_email(subscription.user_id)
+        if not user_email:
+            return
+        
+        from app.services.email_templates import EmailTemplates
+        from app.services.email_service import EmailMessage
+        
+        # Build action URL
+        action_url = f"https://app.example.com/subscriptions/{subscription.id}/results"
+        
+        html_body = EmailTemplates.subscription_alert(
+            user_name=user_email.split('@')[0],  # Simple fallback
+            subscription_name=subscription.name,
+            condition_met=result.condition_met,
+            rows_found=result.rows_found,
+            summary=result.condition_details.get("summary", ""),
+            query_results=result.result_data,
+            action_url=action_url
+        )
+        
+        email_msg = EmailMessage(
+            to=user_email,
+            subject=f"Alert: {subscription.name}",
+            html_body=html_body,
+            text_body=message  # Plain text fallback
+        )
+        
+        await self.email.send_email(email_msg)
+    
+    async def _get_user_email(self, user_id: str) -> Optional[str]:
+        """Get user email from database"""
+        # This would integrate with your user service
+        # For now, placeholder
+        return None
     
     async def cancel_subscription(
         self,

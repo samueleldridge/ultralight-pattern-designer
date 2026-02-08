@@ -182,6 +182,19 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
     // Persist user message
     await persistMessage(userMessage)
 
+    // Check for subscription intent first
+    const subscriptionResult = await checkSubscriptionIntent(input)
+    if (subscriptionResult) {
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: subscriptionResult.message,
+        timestamp: new Date()
+      }])
+      setIsLoading(false)
+      return
+    }
+
     try {
       // Start query
       const response = await fetch('/api/query', {
@@ -293,6 +306,34 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
       default:
         return <Circle className="w-4 h-4 text-foreground-subtle" />
     }
+  }
+
+  // Check if input is a subscription command
+  const checkSubscriptionIntent = async (text: string) => {
+    // Quick check for subscription keywords
+    const subKeywords = ['tell me', 'notify me', 'alert me', 'track', 'monitor', 'subscribe', 'unsubscribe', 'stop', 'cancel']
+    const hasKeyword = subKeywords.some(kw => text.toLowerCase().includes(kw))
+    
+    if (!hasKeyword) return null
+    
+    try {
+      const response = await fetch('/api/nl-subscriptions/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, session_id: sessionId })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.action !== 'unknown') {
+          return result
+        }
+      }
+    } catch (error) {
+      console.error('Subscription check failed:', error)
+    }
+    
+    return null
   }
 
   const getCategoryColor = (category: string) => {

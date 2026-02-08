@@ -16,7 +16,8 @@ import {
   Circle,
   AlertCircle,
   History,
-  Command
+  Command,
+  Download
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChartRenderer, ChartTypeSelector } from '@/components/ChartRenderer'
@@ -63,6 +64,9 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
   // Session management
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [showSessionManager, setShowSessionManager] = useState(false)
+  
+  // Export
+  const [exporting, setExporting] = useState<string | null>(null)
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -336,6 +340,46 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
     return null
   }
 
+  // Export query results
+  const exportResults = async (message: Message) => {
+    if (!message.resultData || message.resultData.length === 0) return
+    
+    setExporting(message.id)
+    
+    try {
+      // Default to Excel for best stakeholder presentation
+      const response = await fetch('/api/exports/quick-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: message.content,
+          sql: message.sql,
+          data: message.resultData,
+          format: 'excel'
+        })
+      })
+      
+      if (response.ok) {
+        // Download the file
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `export_${message.content?.slice(0, 20).replace(/\s+/g, '_')}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+      } else {
+        console.error('Export failed')
+      }
+    } catch (error) {
+      console.error('Export error:', error)
+    } finally {
+      setExporting(null)
+    }
+  }
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'thinking':
@@ -590,8 +634,29 @@ export function ChatInterface({ onAddView }: ChatInterfaceProps) {
                               title={message.content?.slice(0, 50)}
                             />
                             
-                            {/* Add to Dashboard Button */}
-                            <div className="flex justify-end">
+                            {/* Action Buttons */}
+                            <div className="flex justify-end gap-3">
+                              {/* Export Button */}
+                              {message.resultData && message.resultData.length > 0 && (
+                                <div className="relative">
+                                  {exporting === message.id ? (
+                                    <span className="text-xs text-foreground-muted flex items-center gap-1">
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      Exporting...
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={() => exportResults(message)}
+                                      className="text-xs text-foreground-muted hover:text-primary transition-colors font-medium flex items-center gap-1"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                      Export
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {/* Add to Dashboard Button */}
                               <button 
                                 onClick={() => onAddView({
                                   title: message.content?.slice(0, 30) || 'Query Results',

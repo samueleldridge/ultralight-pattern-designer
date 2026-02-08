@@ -13,6 +13,7 @@ from .subscriptions import router as subscriptions_router
 from .chat_sessions import router as chat_sessions_router
 from .email import router as email_router
 from .nl_subscriptions import router as nl_subscriptions_router
+from .exports import router as exports_router
 
 __all__ = [
     "router",
@@ -26,4 +27,5 @@ __all__ = [
     "chat_sessions_router",
     "email_router",
     "nl_subscriptions_router",
+    "exports_router",
 ]

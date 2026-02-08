@@ -279,3 +279,42 @@ class EmailTemplates:
         """
         
         return cls.base_template(content, "Welcome to AI Analytics")
+    
+    @classmethod
+    def export_complete(
+        cls,
+        user_name: str,
+        query: str,
+        row_count: int,
+        format: str
+    ) -> str:
+        """Email template for completed export"""
+        
+        content = f"""
+            <h2>Hi {user_name},</h2>
+            
+            <p>Your data export is ready!</p>
+            
+            <div class="success">
+                <strong>✅ Export Complete</strong>
+                <p style="margin: 8px 0;"><strong>Query:</strong> {query[:100]}{'...' if len(query) > 100 else ''}</p>
+                <p style="margin: 8px 0;"><strong>Rows:</strong> {row_count:,}</p>
+                <p style="margin: 8px 0;"><strong>Format:</strong> {format}</p>
+            </div>
+            
+            <div class="highlight">
+                <p><strong>📎 Your file is attached to this email.</strong></p>
+                <p style="font-size: 14px; color: #666;">
+                    You can open it in Excel, Google Sheets, or any spreadsheet application.
+                    The file will also be available for download in the app for 24 hours.
+                </p>
+            </div>
+            
+            <p style="margin-top: 24px;">
+                <strong>💡 Pro tip:</strong> You can schedule this export to run automatically 
+                and have it emailed to you daily, weekly, or monthly. Just ask me: 
+                <em>"Send me this report every week"</em>
+            </p>
+        """
+        
+        return cls.base_template(content, "Your Data Export is Ready")
